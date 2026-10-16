@@ -1,0 +1,36 @@
+# The stack a developer runs on their machine.
+name: parcelpoint
+
+services:
+  web:
+    build: ./web
+    ports: ["3000:3000"]
+    depends_on: [api]
+    networks: [edge]
+
+  api:
+    image: ghcr.io/parcelpoint/tracking-api:1.8.2
+    ports: ["8080:8080"]
+    depends_on: [db, queue]
+    networks: [edge, data]
+
+  worker:
+    image: ghcr.io/parcelpoint/event-worker:1.8.2
+    depends_on: [db, queue]
+    networks: [data]
+
+  db:
+    image: postgres:16-alpine
+    volumes: [tracking-data:/var/lib/postgresql/data]
+    networks: [data]
+
+  queue:
+    image: rabbitmq:3.13-management
+    networks: [data]
+
+networks:
+  edge: {}
+  data: {}
+
+volumes:
+  tracking-data: {}

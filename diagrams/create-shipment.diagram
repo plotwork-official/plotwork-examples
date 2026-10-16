@@ -1,0 +1,17 @@
+sequence "Create a shipment" desc="A merchant creates a shipment; the API stores it, asks the carrier for a label, and returns the tracking codes."
+
+actor shop client "Merchant shop"
+actor api service "Tracking API"
+actor db database "Tracking database"
+actor carrier external "Carrier"
+
+shop -> api : "POST /shipments"
+api -> db : "Insert shipment and parcels"
+api -> carrier : "Request a label"
+
+alt "label ready" {
+  carrier --> api : "Label PDF"
+  api --> shop : "201 with tracking codes"
+} else "carrier down" {
+  api --> shop : "202, label to follow"
+}

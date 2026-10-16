@@ -1,0 +1,44 @@
+# Fails a pull request whose generated diagrams no longer match the files they are made from, or whose hand-written
+# diagrams have an error or a stale picture. Nothing is written and no token is used.
+
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  generated:
+    name: Generated diagrams match their files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: plotwork-official/plotwork-action@v1.0.0-beta.2
+        with:
+          command: generate
+
+  diagrams:
+    name: Hand-written diagrams are valid and drawn
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: plotwork-official/plotwork-action@v1.0.0-beta.2
+        with:
+          command: check
+          paths: |
+            **/*.md
+          diagrams: |
+            diagrams/**/*.diagram

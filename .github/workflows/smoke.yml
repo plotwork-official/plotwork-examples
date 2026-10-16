@@ -1,0 +1,326 @@
+# Proves diagrams as code works end to end with a released Action and command line, against this repository on GitHub.
+#
+#   when                                   what is tested
+#   repository_dispatch plotwork-released  the versions the release names in its payload (action_version, cli_version);
+#                                          the monorepo's action-release and cli-release send it after each release
+#   workflow_dispatch                      the versions typed in, or the latest releases when left empty
+#   schedule                               the latest releases, nightly
+#
+#   step  scenario
+#   a     a clean tree (first brought to the version under test): generate in check mode passes, and the command line
+#         finds no change in meaning
+#   b     a Terraform resource added in the job: check mode fails, names the new node, and the command line agrees
+#   c     write mode with on-drift pr on a branch of this run opens a pull request holding the new diagram
+#   d     a rerun with no drift changes nothing, and closes that pull request and deletes its branch
+#   e     the overrides: a label survives regeneration, and a stale override warns without failing
+#   g     publishing, only when the secret PLOTWORK_API_KEY is set: a stable link that serves an SVG
+#
+# Each scenario runs with continue-on-error and is then asserted on its outcome and outputs, so one failure still lets
+# the others run and report; the job fails if any assertion did. The pull request and its branch are removed at the
+# end whatever happened. The logs job then checks the API key was printed nowhere.
+
+name: smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_version:
+        description: The Action version to test, such as 1.0.0-beta.2. Empty tests the latest release.
+        type: string
+        default: ''
+      cli_version:
+        description: The command line version to test, such as 0.1.0-beta.2. Empty tests the latest beta on npm.
+        type: string
+        default: ''
+  schedule:
+    - cron: '41 5 * * *'
+  repository_dispatch:
+    types: [plotwork-released]
+
+permissions: {}
+
+concurrency:
+  group: smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # push the smoke pull request branch
+      pull-requests: write # open and close the smoke pull request
+    env:
+      SMOKE_BRANCH: plotwork/smoke-${{ github.run_id }}-${{ github.run_attempt }}
+      HAS_KEY: ${{ secrets.PLOTWORK_API_KEY != '' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Pick the versions under test
+        id: versions
+        env:
+          WANT_ACTION: ${{ github.event.client_payload.action_version || inputs.action_version }}
+          WANT_CLI: ${{ github.event.client_payload.cli_version || inputs.cli_version }}
+        run: |
+          set -euo pipefail
+          action="${WANT_ACTION#v}"
+          if [ -z "$action" ]; then
+            action=$(gh release list --repo plotwork-official/plotwork-action --limit 1 --json tagName --jq '.[0].tagName')
+            action="${action#v}"
+          fi
+          cli="${WANT_CLI#v}"
+          if [ -z "$cli" ]; then cli=$(npm view @buun_group/plotwork dist-tags.beta 2>/dev/null || true); fi
+          if [ -z "$cli" ]; then cli=$(npm view @buun_group/plotwork version); fi
+          # A release of the command line is mirrored before npm serves it, so a dispatched version is waited for.
+          for _ in $(seq 1 40); do
+            if npm view "@buun_group/plotwork@$cli" version >/dev/null 2>&1; then break; fi
+            sleep 15
+          done
+          npm view "@buun_group/plotwork@$cli" version >/dev/null || { echo "::error::npm does not serve @buun_group/plotwork@$cli."; exit 1; }
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+          echo "cli=$cli" >> "$GITHUB_OUTPUT"
+          echo "Testing plotwork-action $action and @buun_group/plotwork $cli." >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: plotwork-official/plotwork-action
+          ref: v${{ steps.versions.outputs.action }}
+          path: .smoke/action
+          persist-credentials: false
+
+      - name: The Action under test is the version asked for
+        env:
+          VERSION: ${{ steps.versions.outputs.action }}
+        run: |
+          set -euo pipefail
+          head -c 400 .smoke/action/dist/index.js | grep -F "plotwork-official/plotwork-action $VERSION. " || { echo "::error::.smoke/action is not plotwork-action $VERSION."; exit 1; }
+
+      # A new engine may draw the committed pictures differently, which the regenerate workflow then fixes with a pull
+      # request. So the tree is first brought to the version under test, and only a semantic change is a finding here.
+      - id: prepare
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: write
+          on-drift: fail
+          summary: false
+
+      - name: Say whether the committed tree was in step with this version
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.prepare.outcome }}
+          CHANGES: ${{ steps.prepare.outputs.changes }}
+        run: |
+          set -euo pipefail
+          if [ "$OUTCOME" = success ]; then echo "The committed diagrams are in step with this version."; exit 0; fi
+          node -e 'const changes = JSON.parse(process.env.CHANGES || "[]"); const meaning = changes.filter((entry) => entry.changes > 0); if (meaning.length > 0) { console.log("::error::The committed diagrams differ in meaning from what this version makes: " + meaning.map((entry) => entry.name + ": " + entry.summary).join("; ")); process.exit(1) } console.log("::notice::This version draws the committed pictures differently; the regenerate workflow updates them.")'
+
+      # (a) A clean tree is in step.
+      - id: clean
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+
+      - name: (a) A clean tree passes the check
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.clean.outcome }}
+          STALE: ${{ steps.clean.outputs.stale }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = success || { echo "::error::(a) generate failed on a clean tree."; exit 1; }
+          test "$STALE" = 0 || { echo "::error::(a) $STALE diagrams drifted on a clean tree."; exit 1; }
+
+      # The command line may bundle another engine than the Action, so it is held to the same meaning, not the same bytes.
+      - name: (a) The command line agrees on the clean tree
+        if: ${{ !cancelled() }}
+        env:
+          CLI: ${{ steps.versions.outputs.cli }}
+        run: |
+          set -euo pipefail
+          npx --yes "@buun_group/plotwork@$CLI" generate --check --format json > cli-clean.json || true
+          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-clean.json", "utf8")); const moved = plan.diagrams.filter((diagram) => diagram.failed || (diagram.diff?.changes ?? []).length > 0); if (moved.length > 0) { console.log("::error::(a) the command line finds changes on a clean tree: " + moved.map((diagram) => diagram.name).join(", ")); process.exit(1) }'
+
+      # (b) A new resource is drift, named by its node.
+      - name: Add a Terraform resource
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          printf '\nresource "aws_sqs_queue" "smoke_dead_letters" {\n  name = "smoke-dead-letters"\n}\n' >> infra/data.tf
+
+      - id: drift
+        if: ${{ !cancelled() }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+
+      - name: (b) The new resource is drift, and the change names it
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.drift.outcome }}
+          STALE: ${{ steps.drift.outputs.stale }}
+          FILES: ${{ steps.drift.outputs.files }}
+          CHANGES: ${{ steps.drift.outputs.changes }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = failure || { echo "::error::(b) generate passed with a resource added."; exit 1; }
+          test "$STALE" -ge 1 || { echo "::error::(b) no diagram drifted."; exit 1; }
+          echo "$FILES" | grep -F '"docs/infra.diagram"' || { echo "::error::(b) docs/infra.diagram is not in the files output: $FILES"; exit 1; }
+          echo "$CHANGES" | grep -F 'smoke_dead_letters' || { echo "::error::(b) the changes do not name smoke_dead_letters: $CHANGES"; exit 1; }
+
+      - name: (b) The command line agrees on the drift
+        if: ${{ !cancelled() }}
+        env:
+          CLI: ${{ steps.versions.outputs.cli }}
+        run: |
+          set -euo pipefail
+          if npx --yes "@buun_group/plotwork@$CLI" generate --check --format json > cli-drift.json; then echo "::error::(b) the command line passed where the Action failed."; exit 1; fi
+          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-drift.json", "utf8")); const infra = plan.diagrams.find((diagram) => diagram.out === "docs/infra.diagram"); const named = (infra?.diff?.changes ?? []).some((change) => change.name === "smoke_dead_letters"); if (!named) { console.log("::error::(b) the command line does not name smoke_dead_letters."); process.exit(1) }'
+
+      # (c) Write mode opens a pull request on this run's own branch.
+      - id: write
+        if: ${{ !cancelled() }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: write
+          on-drift: pr
+          pr-branch: ${{ env.SMOKE_BRANCH }}
+          pr-title: 'smoke: regenerate diagrams (run ${{ github.run_id }})'
+
+      - name: (c) A pull request holds the new diagram
+        id: opened
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.write.outcome }}
+          PULL_REQUEST: ${{ steps.write.outputs.pull-request }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = success || { echo "::error::(c) write mode failed."; exit 1; }
+          test -n "$PULL_REQUEST" || { echo "::error::(c) no pull request was opened."; exit 1; }
+          number="${PULL_REQUEST##*/}"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq .head.ref)
+          test "$head" = "$SMOKE_BRANCH" || { echo "::error::(c) the pull request is from $head, not $SMOKE_BRANCH."; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$number/files" --jq '.[].filename' | grep -x 'docs/infra.diagram' || { echo "::error::(c) the pull request does not change docs/infra.diagram."; exit 1; }
+
+      # (d) The same run again finds nothing to do, and closes the pull request it opened.
+      - id: again
+        if: ${{ !cancelled() }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: write
+          on-drift: pr
+          pr-branch: ${{ env.SMOKE_BRANCH }}
+
+      - name: (d) A rerun with no drift is a no-op and closes the pull request
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.again.outcome }}
+          STALE: ${{ steps.again.outputs.stale }}
+          PULL_REQUEST: ${{ steps.again.outputs.pull-request }}
+          NUMBER: ${{ steps.opened.outputs.number }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = success || { echo "::error::(d) the rerun failed."; exit 1; }
+          test "$STALE" = 0 || { echo "::error::(d) the rerun found $STALE drifted diagrams."; exit 1; }
+          test -z "$PULL_REQUEST" || { echo "::error::(d) the rerun opened or edited $PULL_REQUEST."; exit 1; }
+          test -n "$NUMBER" || { echo "::error::(d) there is no pull request from (c) to check."; exit 1; }
+          state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .state)
+          test "$state" = closed || { echo "::error::(d) pull request $NUMBER is $state, not closed."; exit 1; }
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SMOKE_BRANCH" >/dev/null 2>&1; then echo "::error::(d) $SMOKE_BRANCH was not deleted."; exit 1; fi
+
+      # (e) An override survives regeneration, and one whose resource is gone only warns.
+      - name: Add a stale override
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          node -e 'const fs = require("fs"); const path = "docs/infra.overrides.json"; const o = JSON.parse(fs.readFileSync(path, "utf8")); o.items["aws_sqs_queue.gone"] = { label: "Gone" }; fs.writeFileSync(path, JSON.stringify(o, null, 2) + "\n")'
+
+      - id: overrides
+        if: ${{ !cancelled() }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+
+      - name: (e) The label survives and the stale override warns
+        if: ${{ !cancelled() }}
+        env:
+          OUTCOME: ${{ steps.overrides.outcome }}
+          WARNINGS: ${{ steps.overrides.outputs.warnings }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = success || { echo "::error::(e) a stale override failed the run."; exit 1; }
+          test "$WARNINGS" -ge 1 || { echo "::error::(e) the stale override gave no warning."; exit 1; }
+          grep -F '"Shipping labels"' docs/infra.diagram || { echo "::error::(e) the override label is not in docs/infra.diagram."; exit 1; }
+
+      # (g) Publishing, only with the key.
+      - id: publish
+        if: ${{ !cancelled() && env.HAS_KEY == 'true' }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: write
+          on-drift: fail
+          publish: true
+        env:
+          PLOTWORK_API_KEY: ${{ secrets.PLOTWORK_API_KEY }}
+
+      - name: (g) The stable link serves the picture
+        if: ${{ !cancelled() && env.HAS_KEY == 'true' }}
+        env:
+          PUBLISHED: ${{ steps.publish.outputs.published }}
+        run: |
+          set -euo pipefail
+          link=$(echo "$PUBLISHED" | jq -r '[.[] | select(.stableLink != null) | .stableLink][0] // empty')
+          test -n "$link" || { echo "::error::(g) nothing was published to a stable link: $PUBLISHED"; exit 1; }
+          type=$(curl --fail --silent --show-error --location --output picture.svg --write-out '%{content_type}' "$link")
+          case "$type" in image/svg+xml*) ;; *) echo "::error::(g) $link answered $type."; exit 1 ;; esac
+          head -c 200 picture.svg | grep -q '<svg' || { echo "::error::(g) $link is not an SVG."; exit 1; }
+
+      - name: (g) Publishing is skipped without the key
+        if: ${{ !cancelled() && env.HAS_KEY != 'true' }}
+        run: echo "::notice::The secret PLOTWORK_API_KEY is not set, so publishing was not tested."
+
+      - name: Close the smoke pull request and delete its branch
+        if: always()
+        run: |
+          set -uo pipefail
+          for number in $(gh pr list --repo "$GITHUB_REPOSITORY" --head "$SMOKE_BRANCH" --state open --json number --jq '.[].number'); do
+            gh pr close "$number" --repo "$GITHUB_REPOSITORY" --comment "Closed by the smoke test that opened it."
+          done
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$SMOKE_BRANCH" >/dev/null 2>&1 || true
+
+  logs:
+    name: The API key appears in no log
+    needs: smoke
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read # read the smoke job's log
+    steps:
+      - name: Search the smoke job's log for the key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEY: ${{ secrets.PLOTWORK_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEY" ]; then echo "::notice::The secret PLOTWORK_API_KEY is not set; nothing to search for."; exit 0; fi
+          for job in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --jq '.jobs[] | select(.name == "Smoke test") | .id'); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs" > smoke.log
+            if grep -qF "$KEY" smoke.log; then echo "::error::The API key is in the smoke job's log."; exit 1; fi
+          done
+          echo "The key is in no log of the smoke job."

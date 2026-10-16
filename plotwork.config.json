@@ -1,0 +1,65 @@
+{
+  "$schema": "https://docs.plotwork.dev/schemas/plotwork.config.json",
+  "sources": [
+    {
+      "name": "infra",
+      "from": "infra/*.tf",
+      "format": "terraform",
+      "out": "docs/infra.diagram",
+      "title": "Parcelpoint on AWS",
+      "publish": {
+        "alias": "parcelpoint-infra"
+      }
+    },
+    {
+      "name": "services",
+      "from": "compose.yaml",
+      "format": "compose",
+      "out": "docs/architecture.md#services",
+      "title": "Parcelpoint services on a laptop"
+    },
+    {
+      "name": "cluster",
+      "from": "k8s",
+      "format": "kubernetes",
+      "out": "docs/cluster.diagram",
+      "title": "Parcelpoint on Kubernetes"
+    },
+    {
+      "name": "api",
+      "from": "api/openapi.json",
+      "format": "openapi",
+      "view": "map",
+      "out": "docs/api.diagram"
+    },
+    {
+      "name": "api-access",
+      "from": "api/openapi.json",
+      "format": "openapi",
+      "view": "endpoints",
+      "out": "docs/api-access.diagram",
+      "title": "Who may call each endpoint"
+    },
+    {
+      "name": "database",
+      "from": "db/schema.sql",
+      "format": "sql",
+      "out": "docs/database.diagram",
+      "title": "Tracking database"
+    },
+    {
+      "name": "ci",
+      "from": ".github/workflows/check.yml",
+      "format": "github-actions",
+      "out": "docs/ci.diagram",
+      "title": "Pull request checks"
+    },
+    {
+      "name": "shipments",
+      "from": "data/shipments.csv",
+      "format": "csv",
+      "out": "docs/shipments.diagram",
+      "title": "Shipments by region"
+    }
+  ]
+}

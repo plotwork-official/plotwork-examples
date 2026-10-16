@@ -1,0 +1,16 @@
+gantt "Parcelpoint roadmap, fourth quarter" start=2026-10-05 unit=week today=2026-10-16 weekends=skip desc="The work of the fourth quarter: carrier integrations, then returns, then the merchant dashboard."
+
+section "Carriers" {
+  task dpd "DPD integration" start=2026-10-05 duration=2w status=active
+  task gls "GLS integration" after=dpd duration=2w
+}
+
+section "Returns" tone=violet {
+  task design "Returns design" start=2026-10-12 duration=2w
+  task build "Returns build" after=design duration=3w
+  milestone returns "Returns live" after=build
+}
+
+section "Dashboard" tone=aqua {
+  task dash "Merchant dashboard" after=gls duration=4w
+}

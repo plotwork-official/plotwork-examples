@@ -1,0 +1,16 @@
+state "Parcel status" desc="A parcel is created with its shipment, is collected and moves through the network, and is delivered or returned."
+
+state created "Created" tone=neutral icon=lucide:package
+state transit "In transit" tone=blue icon=lucide:truck
+state out "Out for delivery" tone=blue icon=lucide:map-pin
+state delivered "Delivered" tone=green icon=status:success
+state returned "Returned" sub="Sent back to the merchant" tone=red icon=status:error
+
+start -> created
+created -> transit : "collected"
+transit -> out : "at the local depot"
+out -> delivered : "signed for"
+out -> transit : "missed, retry tomorrow"
+transit -> returned : "address not found"
+delivered -> end
+returned -> end

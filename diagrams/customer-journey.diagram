@@ -1,0 +1,15 @@
+journey "Waiting for a parcel" desc="How a customer feels from the order to the parcel at the door."
+
+actor "Customer" tone=blue
+actor "Courier"
+
+section "Order" {
+  task "Get the tracking email" score=4 actors="Customer"
+  task "Open the tracking page" score=5 actors="Customer"
+}
+
+section "Delivery" {
+  task "Parcel stuck at a depot" score=2 actors="Customer, Courier"
+  task "Out for delivery" score=4 actors="Customer, Courier"
+  task "Signed for" score=5 actors="Customer, Courier"
+}

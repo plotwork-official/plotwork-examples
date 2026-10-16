@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tracking
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracking-api
+  namespace: tracking
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tracking-api
+  template:
+    metadata:
+      labels:
+        app: tracking-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/parcelpoint/tracking-api:1.8.2
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: tracking-config
+            - secretRef:
+                name: tracking-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracking-api
+  namespace: tracking
+spec:
+  selector:
+    app: tracking-api
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tracking
+  namespace: tracking
+spec:
+  rules:
+    - host: api.parcelpoint.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tracking-api
+                port:
+                  number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracking-config
+  namespace: tracking
+data:
+  LOG_LEVEL: info
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tracking-db
+  namespace: tracking
+type: Opaque
+stringData:
+  DATABASE_URL: postgres://tracking@postgres:5432/tracking

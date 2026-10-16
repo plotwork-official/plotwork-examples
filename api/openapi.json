@@ -1,0 +1,75 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Parcelpoint tracking API",
+    "version": "1.8.2",
+    "description": "Create shipments, follow parcels, and receive carrier events."
+  },
+  "servers": [{ "url": "https://api.parcelpoint.example/v1" }],
+  "security": [{ "bearer": [] }],
+  "tags": [
+    { "name": "shipments", "description": "Shipments and their labels" },
+    { "name": "tracking", "description": "Where a parcel is" },
+    { "name": "webhooks", "description": "Events sent to a merchant" }
+  ],
+  "paths": {
+    "/shipments": {
+      "get": { "operationId": "listShipments", "tags": ["shipments"], "summary": "List shipments", "responses": { "200": { "description": "A page of shipments" } } },
+      "post": {
+        "operationId": "createShipment",
+        "tags": ["shipments"],
+        "summary": "Create a shipment",
+        "security": [{ "bearer": ["shipments:write"] }],
+        "responses": { "201": { "description": "The shipment" } }
+      }
+    },
+    "/shipments/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": { "operationId": "getShipment", "tags": ["shipments"], "summary": "Get a shipment", "responses": { "200": { "description": "The shipment" } } },
+      "delete": {
+        "operationId": "cancelShipment",
+        "tags": ["shipments"],
+        "summary": "Cancel a shipment",
+        "security": [{ "bearer": ["shipments:write"] }],
+        "responses": { "204": { "description": "Cancelled" } }
+      }
+    },
+    "/shipments/{id}/label": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": { "operationId": "getLabel", "tags": ["shipments"], "summary": "Download the label PDF", "responses": { "200": { "description": "The label" } } }
+    },
+    "/parcels/{code}": {
+      "parameters": [{ "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": { "operationId": "trackParcel", "tags": ["tracking"], "summary": "Track a parcel", "security": [], "responses": { "200": { "description": "The parcel and its last event" } } }
+    },
+    "/parcels/{code}/events": {
+      "parameters": [{ "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": { "operationId": "listParcelEvents", "tags": ["tracking"], "summary": "List a parcel's events", "security": [], "responses": { "200": { "description": "The events" } } }
+    },
+    "/carrier-events": {
+      "post": {
+        "operationId": "receiveCarrierEvent",
+        "tags": ["tracking"],
+        "summary": "Receive an event from a carrier",
+        "security": [{ "carrierKey": [] }],
+        "responses": { "202": { "description": "Queued" } }
+      }
+    },
+    "/webhooks": {
+      "get": { "operationId": "listWebhooks", "tags": ["webhooks"], "summary": "List webhooks", "responses": { "200": { "description": "The webhooks" } } },
+      "post": {
+        "operationId": "createWebhook",
+        "tags": ["webhooks"],
+        "summary": "Add a webhook",
+        "security": [{ "bearer": ["webhooks:write"] }],
+        "responses": { "201": { "description": "The webhook" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": { "type": "http", "scheme": "bearer", "description": "A merchant's API token" },
+      "carrierKey": { "type": "apiKey", "in": "header", "name": "X-Carrier-Key", "description": "A carrier's shared key" }
+    }
+  }
+}

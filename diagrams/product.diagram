@@ -1,0 +1,20 @@
+mindmap "Parcelpoint product" desc="What Parcelpoint offers merchants and their customers."
+
+root "Parcelpoint" icon=lucide:package
+
+topic "Shipments" icon=lucide:boxes {
+  topic "Labels"
+  topic "Pickups"
+  topic "Customs forms"
+}
+
+topic "Tracking" icon=lucide:map-pin {
+  topic "Tracking page"
+  topic "Email updates"
+  topic "Webhooks"
+}
+
+topic "Returns" icon=lucide:undo-2 {
+  topic "Return labels"
+  topic "Refund triggers"
+}

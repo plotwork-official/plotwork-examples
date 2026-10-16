@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-worker
+  namespace: tracking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-worker
+  template:
+    metadata:
+      labels:
+        app: event-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/parcelpoint/event-worker:1.8.2
+          envFrom:
+            - configMapRef:
+                name: tracking-config
+            - secretRef:
+                name: tracking-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: tracking
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: tracking
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 20Gi

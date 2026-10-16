@@ -1,0 +1,17 @@
+flow "From a carrier scan to the tracking page" direction=down desc="A carrier posts a scan, the API queues it, the worker stores it as an event, and the customer's tracking page and the merchant's webhook show it."
+
+node carrier external "Carrier" sub="Scans the parcel"
+node api service "Tracking API" sub="POST /carrier-events"
+node queue queue "Carrier events" sub="SQS"
+node worker function "Event worker"
+node db database "Tracking database" sub="Postgres"
+node page client "Tracking page"
+node hook external "Merchant webhook"
+
+carrier -> api : "scan"
+api -> queue : "enqueue"
+queue ..> worker : "event"
+worker -> db : "store"
+worker ..> hook : "notify"
+page -> api : "GET /parcels/{code}"
+api -> db : "read"

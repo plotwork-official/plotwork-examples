@@ -1,0 +1,14 @@
+c4 "Parcelpoint system context" view=context desc="Who uses Parcelpoint and which systems it talks to."
+
+person merchant "Merchant" desc="Ships goods to customers."
+person customer "Customer" desc="Waits for a parcel."
+system parcelpoint "Parcelpoint" desc="Creates shipments and tracks parcels."
+system carrier "Carriers" external=on desc="Collect and deliver parcels."
+system email "Email service" external=on desc="Sends tracking updates."
+
+merchant -> parcelpoint : "Creates shipments" tech="HTTPS"
+customer -> parcelpoint : "Tracks a parcel"
+parcelpoint -> carrier : "Books labels" tech="HTTPS"
+carrier -> parcelpoint : "Reports scans" tech="Webhooks"
+parcelpoint --> email : "Sends updates"
+email --> customer : "Emails"

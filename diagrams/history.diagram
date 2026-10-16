@@ -1,0 +1,11 @@
+timeline "Parcelpoint history" desc="From one carrier and a spreadsheet to a tracking platform for merchants."
+
+section "Start" {
+  at "2023" : "First merchant" sub="One carrier, one spreadsheet" icon=lucide:table
+  at "2024" : "Tracking API" icon=lucide:code
+}
+
+section "Growth" {
+  at "2025" : "Five carriers" icon=lucide:truck, "Webhooks" icon=lucide:webhook
+  at "2026" : "100,000 parcels a month" tone=green icon=lucide:chart-line
+}
