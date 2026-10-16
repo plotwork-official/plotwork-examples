@@ -11,6 +11,8 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 | How do I change a generated diagram? | In its overrides file, such as [docs/infra.overrides.json](docs/infra.overrides.json), which relabels three resources. Never in the generated file. |
 | What fails a pull request? | [check.yml](.github/workflows/check.yml): a generated diagram that no longer matches its files, or a hand-written diagram with an error. |
 | What writes them back? | [regenerate.yml](.github/workflows/regenerate.yml), nightly and on each push to `main`, opens or edits one pull request, and closes it once nothing drifts. |
+| Can my team call it from our repositories? | [plotwork.yml](.github/workflows/plotwork.yml) is a reusable workflow (`workflow_call`) for check, check with code scanning, and write; this repository's `check.yml` calls it. |
+| How fast is it on a big monorepo? | [scale.yml](.github/workflows/scale.yml) makes one in the job (24 sources by default, hundreds of resources and endpoints), and measures a write and a check on the runner. |
 | What proves a release works? | [smoke.yml](.github/workflows/smoke.yml), after each release of the Action or the command line, nightly, and by hand. |
 | Can I run it on my machine? | `npx @buun_group/plotwork generate --check` in a clone. Nothing leaves the machine. |
 
@@ -36,12 +38,12 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 |---|---|
 | a | On a clean tree, `generate` in check mode passes, and the command line finds no change. |
 | b | A Terraform resource added to `infra/terraform/envs/prod/main.tf` in the job fails the check, the `changes` output names the new node, and the command line agrees. |
-| c | Write mode with `on-drift: pr` opens a pull request from a branch of the run, holding the new diagram. |
+| c | Write mode with `on-drift: pr` opens a pull request from a branch of the run, holding the new resource and its diagram, and that pull request's `check` run passes. When the token that opened it starts no workflow, the check is skipped with a notice. |
 | d | A second run finds nothing to do, closes that pull request, and deletes its branch. |
 | e | An override's label survives regeneration, and an override whose resource is gone warns without failing. |
-| g | With the secret `PLOTWORK_API_KEY`, publishing to a stable link serves an SVG, and the key is in no log. Without it, the step is skipped. |
+| g | With the secret `PLOTWORK_API_KEY` and the variable `PLOTWORK_API_URL` (the API the key belongs to), publishing serves an SVG: a personal key's stable link to anyone, an organisation key's library picture to the key. A second job reads the whole log and checks the key is in it nowhere. Without the secret, the step is skipped. |
 
-The pull request and its branch are removed at the end of every run, whatever happened. The repository must allow GitHub Actions to create pull requests (Settings, Actions, General).
+The pull request and its branch are removed at the end of every run, whatever happened; a run of the branch that is still going is cancelled first, so none is left to fail once the branch is gone. The repository must allow GitHub Actions to create pull requests (Settings, Actions, General).
 
 ## Where it comes from
 

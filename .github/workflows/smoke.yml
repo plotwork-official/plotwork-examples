@@ -10,10 +10,12 @@
 #   a     a clean tree (first brought to the version under test): generate in check mode passes, and the command line
 #         finds no change in meaning
 #   b     a Terraform resource added in the job: check mode fails, names the new node, and the command line agrees
-#   c     write mode with on-drift pr on a branch of this run opens a pull request holding the new diagram
+#   c     write mode with on-drift pr on a branch of this run opens a pull request holding the new diagram and the resource,
+#         whose check run passes (skipped with a notice when the token that opened it starts no workflow)
 #   d     a rerun with no drift changes nothing, and closes that pull request and deletes its branch
 #   e     the overrides: a label survives regeneration, and a stale override warns without failing
-#   g     publishing, only when the secret PLOTWORK_API_KEY is set: a stable link that serves an SVG
+#   g     publishing, only when the secret PLOTWORK_API_KEY is set, to the API of the variable PLOTWORK_API_URL: a personal
+#         key's stable link serves an SVG to anyone; an organisation key's library picture serves an SVG to the key
 #
 # Each scenario runs with continue-on-error and is then asserted on its outcome and outputs, so one failure still lets
 # the others run and report; the job fails if any assertion did. The pull request and its branch are removed at the
@@ -49,11 +51,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      actions: write # wait for, or cancel, the runs of the smoke pull request
       contents: write # push the smoke pull request branch
       pull-requests: write # open and close the smoke pull request
     env:
       SMOKE_BRANCH: plotwork/smoke-${{ github.run_id }}-${{ github.run_attempt }}
       HAS_KEY: ${{ secrets.PLOTWORK_API_KEY != '' }}
+      # The API the key belongs to: the repository variable, such as https://api-preview.plotwork.dev, or the hosted one.
+      PLOTWORK_API_URL: ${{ vars.PLOTWORK_API_URL }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,7 +189,15 @@ jobs:
           if npx --yes "@buun_group/plotwork@$CLI" generate --check --format json > cli-drift.json; then echo "::error::(b) the command line passed where the Action failed."; exit 1; fi
           node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-drift.json", "utf8")); const infra = plan.diagrams.find((diagram) => diagram.out === "docs/infra.diagram"); const named = (infra?.diff?.changes ?? []).some((change) => change.name === "smoke_dead_letters"); if (!named) { console.log("::error::(b) the command line does not name smoke_dead_letters."); process.exit(1) }'
 
-      # (c) Write mode opens a pull request on this run's own branch.
+      # (c) Write mode opens a pull request on this run's own branch. The resource, and any picture the prepare step redrew, is
+      # committed in the job (never pushed by itself), so the pull request carries it with the diagram and its check passes.
+      - name: Commit the Terraform resource in the job
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          git add --update
+          git -c user.name=plotwork-smoke -c user.email=smoke@plotwork.dev commit --quiet --no-verify -m 'smoke: add a Terraform resource'
+
       - id: write
         if: ${{ !cancelled() }}
         uses: ./.smoke/action
@@ -211,6 +224,28 @@ jobs:
           head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq .head.ref)
           test "$head" = "$SMOKE_BRANCH" || { echo "::error::(c) the pull request is from $head, not $SMOKE_BRANCH."; exit 1; }
           gh api "repos/$GITHUB_REPOSITORY/pulls/$number/files" --jq '.[].filename' | grep -x 'docs/infra.diagram' || { echo "::error::(c) the pull request does not change docs/infra.diagram."; exit 1; }
+
+      # The pull request's check run must pass before (d) closes it and deletes its branch: a run whose branch is gone before
+      # it starts fails as a workflow file issue. A pull request opened with a token that starts no workflow has no run.
+      - name: (c) The pull request's check run passes
+        if: ${{ !cancelled() && steps.opened.outcome == 'success' }}
+        timeout-minutes: 15
+        env:
+          NUMBER: ${{ steps.opened.outputs.number }}
+        run: |
+          set -euo pipefail
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .head.sha)
+          run=''
+          for _ in $(seq 1 12); do
+            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&head_sha=$sha" --jq '[.workflow_runs[] | select(.name == "check") | .id][0] // empty')
+            test -n "$run" && break
+            sleep 10
+          done
+          if [ -z "$run" ]; then echo "::notice::(c) pull request $NUMBER started no check run in two minutes, as one opened with a token that starts no workflow does, so its check was not asserted."; exit 0; fi
+          gh run watch "$run" --repo "$GITHUB_REPOSITORY" --interval 15 > /dev/null || true
+          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq .conclusion)
+          test "$conclusion" = success || { echo "::error::(c) the check run of pull request $NUMBER ended $conclusion: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"; exit 1; }
+          echo "The check run of pull request $NUMBER passed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" >> "$GITHUB_STEP_SUMMARY"
 
       # (d) The same run again finds nothing to do, and closes the pull request it opened.
       - id: again
@@ -278,17 +313,33 @@ jobs:
         env:
           PLOTWORK_API_KEY: ${{ secrets.PLOTWORK_API_KEY }}
 
-      - name: (g) The stable link serves the picture
+      # A personal key gets a stable link that anyone can open. An organisation key publishes into its organisation's library,
+      # which has no public address: its picture is served to the key itself.
+      - name: (g) The published picture is served
         if: ${{ !cancelled() && env.HAS_KEY == 'true' }}
         env:
+          OUTCOME: ${{ steps.publish.outcome }}
           PUBLISHED: ${{ steps.publish.outputs.published }}
+          PLOTWORK_API_KEY: ${{ secrets.PLOTWORK_API_KEY }}
         run: |
           set -euo pipefail
-          link=$(echo "$PUBLISHED" | jq -r '[.[] | select(.stableLink != null) | .stableLink][0] // empty')
-          test -n "$link" || { echo "::error::(g) nothing was published to a stable link: $PUBLISHED"; exit 1; }
-          type=$(curl --fail --silent --show-error --location --output picture.svg --write-out '%{content_type}' "$link")
+          test "$OUTCOME" = success || { echo "::error::(g) the publish run failed."; exit 1; }
+          kind=$(echo "$PUBLISHED" | jq -r '.[0].kind // empty')
+          case "$kind" in
+            personal)
+              link=$(echo "$PUBLISHED" | jq -r '[.[] | select(.stableLink != null) | .stableLink][0] // empty')
+              test -n "$link" || { echo "::error::(g) a personal key published no stable link: $PUBLISHED"; exit 1; }
+              type=$(curl --fail --silent --show-error --location --output picture.svg --write-out '%{content_type}' "$link") ;;
+            organization)
+              link=$(echo "$PUBLISHED" | jq -r '.[0].svgUrl // empty')
+              test -n "$link" || { echo "::error::(g) the organisation library returned no picture address: $PUBLISHED"; exit 1; }
+              test "$(echo "$PUBLISHED" | jq -r '.[0].stableLink')" = null || { echo "::error::(g) an organisation diagram has a public stable link."; exit 1; }
+              type=$(curl --fail --silent --show-error --header "x-api-key: $PLOTWORK_API_KEY" --output picture.svg --write-out '%{content_type}' "$link") ;;
+            *) echo "::error::(g) nothing was published: $PUBLISHED"; exit 1 ;;
+          esac
           case "$type" in image/svg+xml*) ;; *) echo "::error::(g) $link answered $type."; exit 1 ;; esac
           head -c 200 picture.svg | grep -q '<svg' || { echo "::error::(g) $link is not an SVG."; exit 1; }
+          echo "Published as a $kind diagram: $link" >> "$GITHUB_STEP_SUMMARY"
 
       - name: (g) Publishing is skipped without the key
         if: ${{ !cancelled() && env.HAS_KEY != 'true' }}
@@ -298,6 +349,11 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
+          # A run of the branch that is still going is cancelled and waited for, so none is left to fail once the branch is gone.
+          for run in $(gh run list --repo "$GITHUB_REPOSITORY" --branch "$SMOKE_BRANCH" --json databaseId,status --jq '.[] | select(.status != "completed") | .databaseId'); do
+            gh run cancel "$run" --repo "$GITHUB_REPOSITORY" || true
+            gh run watch "$run" --repo "$GITHUB_REPOSITORY" --interval 5 > /dev/null 2>&1 || true
+          done
           for number in $(gh pr list --repo "$GITHUB_REPOSITORY" --head "$SMOKE_BRANCH" --state open --json number --jq '.[].number'); do
             gh pr close "$number" --repo "$GITHUB_REPOSITORY" --comment "Closed by the smoke test that opened it."
           done
@@ -319,8 +375,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$KEY" ]; then echo "::notice::The secret PLOTWORK_API_KEY is not set; nothing to search for."; exit 0; fi
-          for job in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --jq '.jobs[] | select(.name == "Smoke test") | .id'); do
-            gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs" > smoke.log
+          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --jq '.jobs[] | select(.name == "Smoke test") | .id')
+          test -n "$jobs" || { echo "::error::The smoke job of this run was not found."; exit 1; }
+          for job in $jobs; do
+            # The log holds terminal escape sequences, which gh api refuses to print, so it is downloaded with curl, following the redirect.
+            curl --fail --silent --show-error --location --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' --output smoke.log "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/jobs/$job/logs"
+            # An empty or foreign download would pass the search, so the log must be the smoke job's own.
+            grep -qF 'Syncing repository: plotwork-official/plotwork-action' smoke.log || { echo "::error::The log of job $job is not the smoke job's ($(wc -c < smoke.log) bytes)."; exit 1; }
             if grep -qF "$KEY" smoke.log; then echo "::error::The API key is in the smoke job's log."; exit 1; fi
+            echo "Searched $(wc -c < smoke.log) bytes of the log of job $job."
           done
           echo "The key is in no log of the smoke job."

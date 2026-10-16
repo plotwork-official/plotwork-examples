@@ -1,0 +1,109 @@
+# Measures the Action on a large monorepo, on a GitHub runner: 24 to 75 sources, hundreds or thousands of Terraform resources
+# across modules, and OpenAPI documents of hundreds of endpoints, all made in the job by .github/scale/make-monorepo.mjs. It
+# records the time and the most memory of a full write and of a check, holds the output to the same bytes when made twice in two
+# places, and holds the job summary under GitHub's 1 MiB limit. Nothing is pushed and nothing is published.
+
+name: scale
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_version:
+        description: The Action version to measure, such as 1.0.0-beta.3. Empty measures the latest release.
+        type: string
+        default: ''
+      teams:
+        description: Teams in the monorepo; each is three sources.
+        type: string
+        default: '8'
+      resources:
+        description: Terraform resources of each team, across four modules.
+        type: string
+        default: '70'
+      endpoints:
+        description: OpenAPI endpoints of each team.
+        type: string
+        default: '120'
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions: {}
+
+jobs:
+  scale:
+    name: Scale test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Pick the version
+        id: version
+        env:
+          WANT: ${{ inputs.action_version }}
+        run: |
+          set -euo pipefail
+          version="${WANT#v}"
+          if [ -z "$version" ]; then version=$(gh release list --repo plotwork-official/plotwork-action --limit 1 --json tagName --jq '.[0].tagName'); version="${version#v}"; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: plotwork-official/plotwork-action
+          ref: v${{ steps.version.outputs.version }}
+          path: .scale/action
+          persist-credentials: false
+
+      - name: Make the monorepo, twice
+        env:
+          TEAMS: ${{ inputs.teams || '8' }}
+          RESOURCES: ${{ inputs.resources || '70' }}
+          ENDPOINTS: ${{ inputs.endpoints || '120' }}
+        run: |
+          set -euo pipefail
+          for copy in one two; do node .github/scale/make-monorepo.mjs "$RUNNER_TEMP/$copy" "$TEAMS" "$RESOURCES" "$ENDPOINTS" | tee "$RUNNER_TEMP/$copy.made"; done
+
+      - name: Measure a full write and a check
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          action="$GITHUB_WORKSPACE/.scale/action/dist/index.js"
+          measure() {
+            local copy="$1" mode="$2"
+            ( cd "$RUNNER_TEMP/$copy" && env -i PATH="$PATH" GITHUB_WORKSPACE="$RUNNER_TEMP/$copy" INPUT_COMMAND=generate INPUT_MODE="$mode" INPUT_ON-DRIFT=fail GITHUB_STEP_SUMMARY="$RUNNER_TEMP/$copy-$mode.md" /usr/bin/time -v node "$action" > "$RUNNER_TEMP/$copy-$mode.log" 2> "$RUNNER_TEMP/$copy-$mode.time" ) || true
+            seconds=$(grep 'Elapsed (wall clock)' "$RUNNER_TEMP/$copy-$mode.time" | awk '{print $NF}')
+            kib=$(grep 'Maximum resident set size' "$RUNNER_TEMP/$copy-$mode.time" | awk '{print $NF}')
+            bytes=$(wc -c < "$RUNNER_TEMP/$copy-$mode.md")
+            echo "| $copy | $mode | $seconds | $((kib / 1024)) MiB | $bytes |" >> "$RUNNER_TEMP/rows.md"
+          }
+          measure one write
+          measure one check
+          measure two write
+          {
+            echo "## Scale test of plotwork-action $VERSION"
+            echo
+            head -1 "$RUNNER_TEMP/one.made"
+            echo
+            echo '| Copy | Mode | Time | Most memory | Summary bytes |'
+            echo '|---|---|---:|---:|---:|'
+            cat "$RUNNER_TEMP/rows.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: The check after a write passes, the output is the same twice, and the summary fits
+        run: |
+          set -euo pipefail
+          grep -q '^::error title=Plotwork::' "$RUNNER_TEMP/one-check.log" && { echo "::error::The check after a full write failed."; tail -20 "$RUNNER_TEMP/one-check.log"; exit 1; }
+          ( cd "$RUNNER_TEMP/one" && find teams -type f \( -name '*.diagram' -o -name '*.svg' \) -print0 | sort -z | xargs -0 sha256sum ) > "$RUNNER_TEMP/one.sums"
+          ( cd "$RUNNER_TEMP/two" && find teams -type f \( -name '*.diagram' -o -name '*.svg' \) -print0 | sort -z | xargs -0 sha256sum ) > "$RUNNER_TEMP/two.sums"
+          diff -q "$RUNNER_TEMP/one.sums" "$RUNNER_TEMP/two.sums" || { echo "::error::The same files made different diagrams in two places."; exit 1; }
+          echo "$(wc -l < "$RUNNER_TEMP/one.sums") files made the same in both copies." >> "$GITHUB_STEP_SUMMARY"
+          for summary in "$RUNNER_TEMP"/*-write.md "$RUNNER_TEMP"/*-check.md; do
+            test "$(wc -c < "$summary")" -le 1000000 || { echo "::error::$summary is over GitHub's 1 MiB summary limit."; exit 1; }
+          done

@@ -11,19 +11,14 @@ on:
 permissions: {}
 
 jobs:
+  # The reusable workflow other repositories call, run here on this repository: it is tested on every change.
   generated:
     name: Generated diagrams match their files
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    uses: ./.github/workflows/plotwork.yml
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: plotwork-official/plotwork-action@v1.0.0-beta.2
-        with:
-          command: generate
+    with:
+      mode: check
 
   diagrams:
     name: Hand-written diagrams are valid and drawn
@@ -35,7 +30,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: plotwork-official/plotwork-action@v1.0.0-beta.2
+      - uses: plotwork-official/plotwork-action@ba9f574c983876c9a51d1167db10ff7685e1fc22 # v1.0.0-beta.2
         with:
           command: check
           paths: |
