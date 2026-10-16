@@ -1,0 +1,7 @@
+config:
+  azure-native:location: westeurope
+  parcelpoint:environment: dev
+  parcelpoint:addressSpace: 10.10.0.0/16
+  parcelpoint:appSubnetPrefix: 10.10.1.0/24
+  parcelpoint:dataSubnetPrefix: 10.10.2.0/24
+  parcelpoint:endpointSubnetPrefix: 10.10.3.0/24

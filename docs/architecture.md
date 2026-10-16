@@ -6,7 +6,7 @@ Parcelpoint is a small, made-up parcel tracking company. Merchants create shipme
 
 | Question | Answer |
 |---|---|
-| What runs in production? | Two ECS services on AWS behind one load balancer, with Postgres, an S3 bucket for label PDFs, and an SQS queue for carrier events. See [infra.diagram](./infra.diagram), made from `infra/*.tf`. |
+| What runs in production? | The tracking API and the carrier event worker on Azure App Service, with Postgres, blob storage for label PDFs, and a Service Bus queue for carrier events. See [infra.diagram](./infra.diagram), made from `infra/terraform`. |
 | What runs on a laptop? | The Docker Compose stack below, made from `compose.yaml`. |
 | What does the API offer? | Ten endpoints in three tags, made from `api/openapi.json`: [by tag](./api.diagram) and [who may call each](./api-access.diagram). |
 | Where is the data? | Five tables, made from `db/schema.sql`. See [database.diagram](./database.diagram). |
@@ -83,7 +83,7 @@ db_1 -> tracking_data_volume : "mounts"
 
 | Diagram | Made from |
 |---|---|
-| [infra.diagram](./infra.diagram) | `infra/*.tf`, with the labels and the hidden gateway in [infra.overrides.json](./infra.overrides.json) |
+| [infra.diagram](./infra.diagram) | `infra/terraform`, the `envs/prod` root module, with the labels in [infra.overrides.json](./infra.overrides.json) |
 | [cluster.diagram](./cluster.diagram) | `k8s/*.yaml` |
 | [api.diagram](./api.diagram), [api-access.diagram](./api-access.diagram) | `api/openapi.json` |
 | [database.diagram](./database.diagram) | `db/schema.sql` |

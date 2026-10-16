@@ -1,0 +1,116 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "Parcelpoint's label and event services as an ARM template, as az bicep build writes one: label PDFs in blob storage, carrier events on a Service Bus queue, the worker that reads them, and its access."
+  },
+  "parameters": {
+    "org": {
+      "type": "string",
+      "defaultValue": "parcel",
+      "minLength": 3,
+      "maxLength": 8,
+      "metadata": { "description": "The short name of the organisation, the first part of every resource name." }
+    },
+    "environment": {
+      "type": "string",
+      "allowedValues": ["dev", "prod"],
+      "metadata": { "description": "The environment this deployment makes." }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": { "description": "The Azure region everything is created in." }
+    }
+  },
+  "variables": {
+    "namePrefix": "[format('{0}-{1}', parameters('org'), parameters('environment'))]",
+    "storageName": "[replace(format('st{0}labels', variables('namePrefix')), '-', '')]",
+    "busName": "[format('sb-{0}', variables('namePrefix'))]",
+    "workerName": "[format('func-{0}-events', variables('namePrefix'))]",
+    "planName": "[format('asp-{0}-events', variables('namePrefix'))]",
+    "blobDataContributor": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+    "serviceBusDataReceiver": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('storageName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": { "name": "[if(equals(parameters('environment'), 'prod'), 'Standard_ZRS', 'Standard_LRS')]" },
+      "properties": { "allowBlobPublicAccess": false, "minimumTlsVersion": "TLS1_2" }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/default/labels', variables('storageName'))]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"]
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2024-01-01",
+      "name": "[variables('busName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Standard" }
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "apiVersion": "2024-01-01",
+      "name": "[format('{0}/carrier-events', variables('busName'))]",
+      "dependsOn": ["[resourceId('Microsoft.ServiceBus/namespaces', variables('busName'))]"],
+      "properties": { "maxDeliveryCount": 10, "lockDuration": "PT1M" }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2024-04-01",
+      "name": "[variables('planName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "sku": { "name": "Y1" }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2024-04-01",
+      "name": "[variables('workerName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux",
+      "identity": { "type": "SystemAssigned" },
+      "dependsOn": ["[resourceId('Microsoft.Web/serverfarms', variables('planName'))]"],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+        "siteConfig": {
+          "appSettings": [
+            { "name": "AzureWebJobsStorage__accountName", "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2023-05-01', 'Full').name]" },
+            { "name": "CARRIER_EVENTS__fullyQualifiedNamespace", "value": "[reference(resourceId('Microsoft.ServiceBus/namespaces', variables('busName')), '2024-01-01').serviceBusEndpoint]" }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(variables('storageName'), variables('workerName'), variables('blobDataContributor'))]",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('storageName'))]",
+      "dependsOn": ["[resourceId('Microsoft.Web/sites', variables('workerName'))]", "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('workerName')), '2024-04-01', 'Full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('blobDataContributor'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(variables('busName'), variables('workerName'), variables('serviceBusDataReceiver'))]",
+      "scope": "[format('Microsoft.ServiceBus/namespaces/{0}', variables('busName'))]",
+      "dependsOn": ["[resourceId('Microsoft.Web/sites', variables('workerName'))]", "[resourceId('Microsoft.ServiceBus/namespaces', variables('busName'))]"],
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('workerName')), '2024-04-01', 'Full').identity.principalId]",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('serviceBusDataReceiver'))]"
+      }
+    }
+  ]
+}

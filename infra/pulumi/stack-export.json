@@ -1,0 +1,1140 @@
+{
+    "version": 3,
+    "deployment": {
+        "manifest": {
+            "time": "2026-10-14T09:12:44.000000+00:00",
+            "magic": "00000000000000000000000000000000000000000000000000000000000000ff",
+            "version": "v3.200.0"
+        },
+        "secrets_providers": {
+            "type": "service",
+            "state": {
+                "url": "https://api.pulumi.com",
+                "owner": "parcelpoint",
+                "project": "parcelpoint",
+                "stack": "prod"
+            }
+        },
+        "resources": [
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod",
+                "custom": false,
+                "type": "pulumi:pulumi:Stack",
+                "outputs": {
+                    "apiHostname": "app-parcel-prod-api.azurewebsites.net"
+                }
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0",
+                "custom": true,
+                "id": "04da6b54-80e4-46f7-96ec-b56ff0331ba9",
+                "type": "pulumi:providers:azure-native",
+                "inputs": {
+                    "location": "westeurope",
+                    "version": "2.90.0"
+                },
+                "outputs": {
+                    "location": "westeurope",
+                    "version": "2.90.0"
+                }
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::pulumi:providers:random::default_4_18_0",
+                "custom": true,
+                "id": "04da6b54-80e4-46f7-96ec-b56ff0331ba9",
+                "type": "pulumi:providers:random",
+                "inputs": {
+                    "version": "4.18.0"
+                },
+                "outputs": {
+                    "version": "4.18.0"
+                }
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                "custom": true,
+                "type": "azure-native:resources:ResourceGroup",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "location": "westeurope",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "rg-parcel-prod",
+                    "location": "westeurope",
+                    "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod",
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring::monitoring",
+                "custom": false,
+                "type": "parcelpoint:index:Monitoring",
+                "inputs": {},
+                "outputs": {},
+                "parent": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "custom": false,
+                "type": "parcelpoint:index:Network",
+                "inputs": {},
+                "outputs": {},
+                "parent": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "custom": false,
+                "type": "parcelpoint:index:Data",
+                "inputs": {},
+                "outputs": {},
+                "parent": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "custom": false,
+                "type": "parcelpoint:index:Compute",
+                "inputs": {},
+                "outputs": {},
+                "parent": "urn:pulumi:prod::parcelpoint::pulumi:pulumi:Stack::parcelpoint-prod"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:NetworkSecurityGroup::appNsg",
+                "custom": true,
+                "type": "azure-native:network:NetworkSecurityGroup",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-parcel-prod-app",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "networkSecurityGroupName": "nsg-parcel-prod-app",
+                    "location": "westeurope",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "nsg-parcel-prod-app"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet",
+                "custom": true,
+                "type": "azure-native:network:VirtualNetwork",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "virtualNetworkName": "vnet-parcel-prod",
+                    "location": "westeurope",
+                    "addressSpace": {
+                        "addressPrefixes": [
+                            "10.20.0.0/16"
+                        ]
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "vnet-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::appSubnet",
+                "custom": true,
+                "type": "azure-native:network:Subnet",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-app",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "virtualNetworkName": "vnet-parcel-prod",
+                    "subnetName": "snet-parcel-prod-app",
+                    "addressPrefix": "10.20.1.0/24",
+                    "networkSecurityGroup": {
+                        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-parcel-prod-app"
+                    },
+                    "delegations": [
+                        {
+                            "name": "delegation",
+                            "serviceName": "Microsoft.Web/serverFarms"
+                        }
+                    ]
+                },
+                "outputs": {
+                    "name": "snet-parcel-prod-app"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:NetworkSecurityGroup::appNsg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "virtualNetworkName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                    ],
+                    "networkSecurityGroup": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:NetworkSecurityGroup::appNsg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::dataSubnet",
+                "custom": true,
+                "type": "azure-native:network:Subnet",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-data",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "virtualNetworkName": "vnet-parcel-prod",
+                    "subnetName": "snet-parcel-prod-data",
+                    "addressPrefix": "10.20.2.0/24",
+                    "delegations": [
+                        {
+                            "name": "delegation",
+                            "serviceName": "Microsoft.DBforPostgreSQL/flexibleServers"
+                        }
+                    ]
+                },
+                "outputs": {
+                    "name": "snet-parcel-prod-data"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "virtualNetworkName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::endpointSubnet",
+                "custom": true,
+                "type": "azure-native:network:Subnet",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-endpoints",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "virtualNetworkName": "vnet-parcel-prod",
+                    "subnetName": "snet-parcel-prod-endpoints",
+                    "addressPrefix": "10.20.3.0/24"
+                },
+                "outputs": {
+                    "name": "snet-parcel-prod-endpoints"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "virtualNetworkName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:PrivateZone::postgresDns",
+                "custom": true,
+                "type": "azure-native:network:PrivateZone",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/privateDnsZones/privatelink.postgres.database.azure.com",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "privateZoneName": "privatelink.postgres.database.azure.com",
+                    "location": "global",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "privatelink.postgres.database.azure.com"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetworkLink::postgresDnsLink",
+                "custom": true,
+                "type": "azure-native:network:VirtualNetworkLink",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/privateDnsZones/privatelink.postgres.database.azure.com/virtualNetworkLinks/pdnslink-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "privateZoneName": "privatelink.postgres.database.azure.com",
+                    "virtualNetworkLinkName": "pdnslink-parcel-prod",
+                    "location": "global",
+                    "registrationEnabled": false,
+                    "virtualNetwork": {
+                        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod"
+                    }
+                },
+                "outputs": {
+                    "name": "pdnslink-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:PrivateZone::postgresDns",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "privateZoneName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:PrivateZone::postgresDns"
+                    ],
+                    "virtualNetwork": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetwork::vnet"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$random:index/randomPassword:RandomPassword::postgresPassword",
+                "custom": true,
+                "type": "random:index/randomPassword:RandomPassword",
+                "id": "none",
+                "inputs": {
+                    "length": 32,
+                    "special": true
+                },
+                "outputs": {
+                    "length": 32,
+                    "result": {
+                        "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                        "ciphertext": "v1:Zm9yLWV4YW1wbGVzLW9ubHk=:bm90LWEtcmVhbC1zZWNyZXQ="
+                    }
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:random::default_4_18_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres",
+                "custom": true,
+                "type": "azure-native:dbforpostgresql:Server",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "serverName": "psql-parcel-prod",
+                    "location": "westeurope",
+                    "version": "16",
+                    "sku": {
+                        "name": "Standard_D2ds_v5",
+                        "tier": "GeneralPurpose"
+                    },
+                    "administratorLogin": "parcelpoint",
+                    "administratorLoginPassword": {
+                        "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                        "ciphertext": "v1:Zm9yLWV4YW1wbGVzLW9ubHk=:bm90LWEtcmVhbC1zZWNyZXQ="
+                    },
+                    "network": {
+                        "delegatedSubnetResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-data",
+                        "privateDnsZoneArmResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/privateDnsZones/privatelink.postgres.database.azure.com",
+                        "publicNetworkAccess": "Disabled"
+                    },
+                    "storage": {
+                        "storageSizeGB": 32
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "psql-parcel-prod",
+                    "fullyQualifiedDomainName": "psql-parcel-prod.postgres.database.azure.com"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$random:index/randomPassword:RandomPassword::postgresPassword",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:PrivateZone::postgresDns",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::dataSubnet",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:VirtualNetworkLink::postgresDnsLink"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "administratorLoginPassword": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$random:index/randomPassword:RandomPassword::postgresPassword"
+                    ],
+                    "network": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::dataSubnet",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:PrivateZone::postgresDns"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Database::tracking",
+                "custom": true,
+                "type": "azure-native:dbforpostgresql:Database",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-parcel-prod/databases/tracking",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "serverName": "psql-parcel-prod",
+                    "databaseName": "tracking",
+                    "charset": "UTF8",
+                    "collation": "en_US.utf8"
+                },
+                "outputs": {
+                    "name": "tracking"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "serverName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels",
+                "custom": true,
+                "type": "azure-native:storage:StorageAccount",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Storage/storageAccounts/stparcelprodlabels",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "accountName": "stparcelprodlabels",
+                    "location": "westeurope",
+                    "kind": "StorageV2",
+                    "sku": {
+                        "name": "Standard_ZRS"
+                    },
+                    "publicNetworkAccess": "Disabled",
+                    "allowBlobPublicAccess": false,
+                    "minimumTlsVersion": "TLS1_2",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "stparcelprodlabels"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:BlobContainer::labelsContainer",
+                "custom": true,
+                "type": "azure-native:storage:BlobContainer",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Storage/storageAccounts/stparcelprodlabels/blobServices/default/containers/labels",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "accountName": "stparcelprodlabels",
+                    "containerName": "labels"
+                },
+                "outputs": {
+                    "name": "labels"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "accountName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:network:PrivateEndpoint::labelsEndpoint",
+                "custom": true,
+                "type": "azure-native:network:PrivateEndpoint",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/privateEndpoints/pe-parcel-prod-labels",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "privateEndpointName": "pe-parcel-prod-labels",
+                    "location": "westeurope",
+                    "subnet": {
+                        "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-endpoints"
+                    },
+                    "privateLinkServiceConnections": [
+                        {
+                            "name": "blob",
+                            "privateLinkServiceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Storage/storageAccounts/stparcelprodlabels",
+                            "groupIds": [
+                                "blob"
+                            ]
+                        }
+                    ],
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "pe-parcel-prod-labels"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::endpointSubnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "subnet": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::endpointSubnet"
+                    ],
+                    "privateLinkServiceConnections": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Namespace::serviceBus",
+                "custom": true,
+                "type": "azure-native:servicebus:Namespace",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.ServiceBus/namespaces/sb-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "namespaceName": "sb-parcel-prod",
+                    "location": "westeurope",
+                    "sku": {
+                        "name": "Standard"
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "sb-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Queue::carrierEvents",
+                "custom": true,
+                "type": "azure-native:servicebus:Queue",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.ServiceBus/namespaces/sb-parcel-prod/queues/carrier-events",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "namespaceName": "sb-parcel-prod",
+                    "queueName": "carrier-events",
+                    "maxDeliveryCount": 10,
+                    "lockDuration": "PT1M",
+                    "deadLetteringOnMessageExpiration": true
+                },
+                "outputs": {
+                    "name": "carrier-events"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Namespace::serviceBus"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "namespaceName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Namespace::serviceBus"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Vault::vault",
+                "custom": true,
+                "type": "azure-native:keyvault:Vault",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.KeyVault/vaults/kv-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "vaultName": "kv-parcel-prod",
+                    "location": "westeurope",
+                    "properties": {
+                        "tenantId": "00000000-0000-0000-0000-000000000000",
+                        "sku": {
+                            "family": "A",
+                            "name": "standard"
+                        },
+                        "enableRbacAuthorization": true,
+                        "enablePurgeProtection": true
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "kv-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Secret::postgresPasswordSecret",
+                "custom": true,
+                "type": "azure-native:keyvault:Secret",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.KeyVault/vaults/kv-parcel-prod/secrets/postgres-password",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "vaultName": "kv-parcel-prod",
+                    "secretName": "postgres-password",
+                    "properties": {
+                        "value": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:Zm9yLWV4YW1wbGVzLW9ubHk=:bm90LWEtcmVhbC1zZWNyZXQ="
+                        }
+                    }
+                },
+                "outputs": {
+                    "name": "postgres-password",
+                    "properties": {
+                        "secretUri": "https://kv-parcel-prod.vault.azure.net/secrets/postgres-password"
+                    }
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data::data",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Vault::vault",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$random:index/randomPassword:RandomPassword::postgresPassword"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "vaultName": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Vault::vault"
+                    ],
+                    "properties": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$random:index/randomPassword:RandomPassword::postgresPassword"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:operationalinsights:Workspace::workspace",
+                "custom": true,
+                "type": "azure-native:operationalinsights:Workspace",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.OperationalInsights/workspaces/log-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "workspaceName": "log-parcel-prod",
+                    "location": "westeurope",
+                    "sku": {
+                        "name": "PerGB2018"
+                    },
+                    "retentionInDays": 90,
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "log-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring::monitoring",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:applicationinsights:Component::insights",
+                "custom": true,
+                "type": "azure-native:applicationinsights:Component",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Insights/components/appi-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "resourceName": "appi-parcel-prod",
+                    "location": "westeurope",
+                    "kind": "web",
+                    "applicationType": "web",
+                    "workspaceResourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.OperationalInsights/workspaces/log-parcel-prod",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "appi-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring::monitoring",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:operationalinsights:Workspace::workspace"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "workspaceResourceId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:operationalinsights:Workspace::workspace"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:insights:DiagnosticSetting::appNsgDiagnostics",
+                "custom": true,
+                "type": "azure-native:insights:DiagnosticSetting",
+                "id": "",
+                "inputs": {
+                    "name": "send-to-workspace",
+                    "resourceUri": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/networkSecurityGroups/nsg-parcel-prod-app",
+                    "workspaceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.OperationalInsights/workspaces/log-parcel-prod",
+                    "logs": [
+                        {
+                            "categoryGroup": "allLogs",
+                            "enabled": true
+                        }
+                    ]
+                },
+                "outputs": {
+                    "name": "send-to-workspace"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network::network",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:operationalinsights:Workspace::workspace",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:NetworkSecurityGroup::appNsg"
+                ],
+                "propertyDependencies": {
+                    "resourceUri": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:NetworkSecurityGroup::appNsg"
+                    ],
+                    "workspaceId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:operationalinsights:Workspace::workspace"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                "custom": true,
+                "type": "azure-native:managedidentity:UserAssignedIdentity",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-parcel-prod-apps",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "resourceName": "id-parcel-prod-apps",
+                    "location": "westeurope",
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "id-parcel-prod-apps",
+                    "principalId": "11111111-2222-3333-4444-555555555555"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:authorization:RoleAssignment::labelsAccess",
+                "custom": true,
+                "type": "azure-native:authorization:RoleAssignment",
+                "id": "",
+                "inputs": {
+                    "principalId": "11111111-2222-3333-4444-555555555555",
+                    "principalType": "ServicePrincipal",
+                    "roleDefinitionId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+                    "scope": "(resource id)"
+                },
+                "outputs": {
+                    "name": "a1b2c3d4-0000-0000-0000-000000000000"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                ],
+                "propertyDependencies": {
+                    "principalId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity"
+                    ],
+                    "scope": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:authorization:RoleAssignment::eventsAccess",
+                "custom": true,
+                "type": "azure-native:authorization:RoleAssignment",
+                "id": "",
+                "inputs": {
+                    "principalId": "11111111-2222-3333-4444-555555555555",
+                    "principalType": "ServicePrincipal",
+                    "roleDefinitionId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0",
+                    "scope": "(resource id)"
+                },
+                "outputs": {
+                    "name": "a1b2c3d4-0000-0000-0000-000000000000"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Namespace::serviceBus"
+                ],
+                "propertyDependencies": {
+                    "principalId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity"
+                    ],
+                    "scope": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Namespace::serviceBus"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:authorization:RoleAssignment::vaultAccess",
+                "custom": true,
+                "type": "azure-native:authorization:RoleAssignment",
+                "id": "",
+                "inputs": {
+                    "principalId": "11111111-2222-3333-4444-555555555555",
+                    "principalType": "ServicePrincipal",
+                    "roleDefinitionId": "/subscriptions/00000000-0000-0000-0000-000000000000/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6",
+                    "scope": "(resource id)"
+                },
+                "outputs": {
+                    "name": "a1b2c3d4-0000-0000-0000-000000000000"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Vault::vault"
+                ],
+                "propertyDependencies": {
+                    "principalId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity"
+                    ],
+                    "scope": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Vault::vault"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:AppServicePlan::plan",
+                "custom": true,
+                "type": "azure-native:web:AppServicePlan",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Web/serverfarms/asp-parcel-prod",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "name": "asp-parcel-prod",
+                    "location": "westeurope",
+                    "kind": "linux",
+                    "reserved": true,
+                    "sku": {
+                        "name": "P1v3"
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "asp-parcel-prod"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:WebApp::api",
+                "custom": true,
+                "type": "azure-native:web:WebApp",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Web/sites/app-parcel-prod-api",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "name": "app-parcel-prod-api",
+                    "location": "westeurope",
+                    "kind": "app,linux",
+                    "serverFarmId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Web/serverfarms/asp-parcel-prod",
+                    "virtualNetworkSubnetId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-app",
+                    "httpsOnly": true,
+                    "identity": {
+                        "type": "UserAssigned",
+                        "userAssignedIdentities": [
+                            "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-parcel-prod-apps"
+                        ]
+                    },
+                    "siteConfig": {
+                        "appSettings": [
+                            {
+                                "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                                "value": "(connection string)"
+                            },
+                            {
+                                "name": "DATABASE_HOST",
+                                "value": "psql-parcel-prod.postgres.database.azure.com"
+                            },
+                            {
+                                "name": "DATABASE_PASSWORD",
+                                "value": "@Microsoft.KeyVault(SecretUri=https://kv-parcel-prod.vault.azure.net/secrets/postgres-password)"
+                            },
+                            {
+                                "name": "LABELS_ACCOUNT",
+                                "value": "stparcelprodlabels"
+                            }
+                        ]
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "app-parcel-prod-api",
+                    "defaultHostName": "app-parcel-prod-api.azurewebsites.net"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:AppServicePlan::plan",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Secret::postgresPasswordSecret",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:applicationinsights:Component::insights",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::appSubnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "serverFarmId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:AppServicePlan::plan"
+                    ],
+                    "virtualNetworkSubnetId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::appSubnet"
+                    ],
+                    "identity": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity"
+                    ],
+                    "siteConfig": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:applicationinsights:Component::insights",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:keyvault:Secret::postgresPasswordSecret",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            },
+            {
+                "urn": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:WebApp::worker",
+                "custom": true,
+                "type": "azure-native:web:WebApp",
+                "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Web/sites/func-parcel-prod-events",
+                "inputs": {
+                    "resourceGroupName": "rg-parcel-prod",
+                    "name": "func-parcel-prod-events",
+                    "location": "westeurope",
+                    "kind": "functionapp,linux",
+                    "serverFarmId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Web/serverfarms/asp-parcel-prod",
+                    "virtualNetworkSubnetId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.Network/virtualNetworks/vnet-parcel-prod/subnets/snet-parcel-prod-app",
+                    "httpsOnly": true,
+                    "identity": {
+                        "type": "UserAssigned",
+                        "userAssignedIdentities": [
+                            "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-parcel-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-parcel-prod-apps"
+                        ]
+                    },
+                    "siteConfig": {
+                        "appSettings": [
+                            {
+                                "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                                "value": "(connection string)"
+                            },
+                            {
+                                "name": "AzureWebJobsStorage__accountName",
+                                "value": "stparcelprodlabels"
+                            },
+                            {
+                                "name": "CARRIER_EVENTS_QUEUE",
+                                "value": "carrier-events"
+                            },
+                            {
+                                "name": "DATABASE_HOST",
+                                "value": "psql-parcel-prod.postgres.database.azure.com"
+                            }
+                        ]
+                    },
+                    "tags": {
+                        "environment": "prod",
+                        "application": "parcelpoint",
+                        "managed_by": "pulumi",
+                        "cost_centre": "logistics-platform"
+                    }
+                },
+                "outputs": {
+                    "name": "func-parcel-prod-events",
+                    "defaultHostName": "func-parcel-prod-events.azurewebsites.net"
+                },
+                "parent": "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute::compute",
+                "dependencies": [
+                    "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:AppServicePlan::plan",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Queue::carrierEvents",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:applicationinsights:Component::insights",
+                    "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::appSubnet"
+                ],
+                "propertyDependencies": {
+                    "resourceGroupName": [
+                        "urn:pulumi:prod::parcelpoint::azure-native:resources:ResourceGroup::rg"
+                    ],
+                    "serverFarmId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:web:AppServicePlan::plan"
+                    ],
+                    "virtualNetworkSubnetId": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Network$azure-native:network:Subnet::appSubnet"
+                    ],
+                    "identity": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Compute$azure-native:managedidentity:UserAssignedIdentity::identity"
+                    ],
+                    "siteConfig": [
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Monitoring$azure-native:applicationinsights:Component::insights",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:storage:StorageAccount::labels",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:servicebus:Queue::carrierEvents",
+                        "urn:pulumi:prod::parcelpoint::parcelpoint:index:Data$azure-native:dbforpostgresql:Server::postgres"
+                    ]
+                },
+                "provider": "urn:pulumi:prod::parcelpoint::pulumi:providers:azure-native::default_2_90_0::04da6b54-80e4-46f7-96ec-b56ff0331ba9"
+            }
+        ]
+    }
+}

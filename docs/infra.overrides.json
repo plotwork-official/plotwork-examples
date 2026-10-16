@@ -1,23 +1,15 @@
 {
   "$schema": "https://docs.plotwork.dev/schemas/plotwork.overrides.json",
-  "header": {
-    "options": {
-      "direction": "right"
-    }
-  },
   "items": {
-    "aws_s3_bucket.labels": {
+    "module.data.azurerm_storage_account.labels": {
       "label": "Shipping labels",
-      "sub": "S3 bucket, label PDFs"
+      "sub": "Storage account, label PDFs"
     },
-    "aws_db_instance.tracking": {
+    "module.data.azurerm_postgresql_flexible_server.this": {
       "label": "Tracking database"
     },
-    "aws_sqs_queue.carrier_events": {
+    "module.data.azurerm_servicebus_queue.carrier_events": {
       "label": "Carrier events"
-    },
-    "aws_internet_gateway.gw": {
-      "hide": true
     }
   }
 }

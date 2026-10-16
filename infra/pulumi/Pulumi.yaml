@@ -1,0 +1,377 @@
+# Parcelpoint on Azure as a Pulumi YAML program: the same network, data services, and apps as ../terraform and
+# ../bicep. Every name is <kind>-<org>-<environment>[-<role>], and every resource carries the same tags.
+# Deploy with: pulumi up --stack prod
+name: parcelpoint
+runtime: yaml
+description: Parcelpoint's tracking platform on Azure.
+
+config:
+  org:
+    type: string
+    default: parcel
+  environment:
+    type: string
+  addressSpace:
+    type: string
+  appSubnetPrefix:
+    type: string
+  dataSubnetPrefix:
+    type: string
+  endpointSubnetPrefix:
+    type: string
+  appSku:
+    type: string
+    default: B1
+  postgresSku:
+    type: string
+    default: Standard_B1ms
+  storageSku:
+    type: string
+    default: Standard_LRS
+
+variables:
+  namePrefix: ${org}-${environment}
+  tags:
+    environment: ${environment}
+    application: parcelpoint
+    managed_by: pulumi
+  clientConfig:
+    fn::invoke:
+      function: azure-native:authorization:getClientConfig
+  roles:
+    blobDataContributor: ba92f5b4-2d11-453d-a403-e96b0029c9fe
+    serviceBusDataReceiver: 4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0
+    keyVaultSecretsUser: 4633458b-17de-408a-b874-0445c86b69e6
+
+resources:
+  rg:
+    type: azure-native:resources:ResourceGroup
+    properties:
+      resourceGroupName: rg-${namePrefix}
+      tags: ${tags}
+
+  # Network
+  appNsg:
+    type: azure-native:network:NetworkSecurityGroup
+    properties:
+      resourceGroupName: ${rg.name}
+      networkSecurityGroupName: nsg-${namePrefix}-app
+      tags: ${tags}
+
+  vnet:
+    type: azure-native:network:VirtualNetwork
+    properties:
+      resourceGroupName: ${rg.name}
+      virtualNetworkName: vnet-${namePrefix}
+      addressSpace:
+        addressPrefixes:
+          - ${addressSpace}
+      tags: ${tags}
+
+  appSubnet:
+    type: azure-native:network:Subnet
+    properties:
+      resourceGroupName: ${rg.name}
+      virtualNetworkName: ${vnet.name}
+      subnetName: snet-${namePrefix}-app
+      addressPrefix: ${appSubnetPrefix}
+      networkSecurityGroup:
+        id: ${appNsg.id}
+      delegations:
+        - name: delegation
+          serviceName: Microsoft.Web/serverFarms
+
+  dataSubnet:
+    type: azure-native:network:Subnet
+    properties:
+      resourceGroupName: ${rg.name}
+      virtualNetworkName: ${vnet.name}
+      subnetName: snet-${namePrefix}-data
+      addressPrefix: ${dataSubnetPrefix}
+      delegations:
+        - name: delegation
+          serviceName: Microsoft.DBforPostgreSQL/flexibleServers
+    options:
+      dependsOn:
+        - ${appSubnet}
+
+  endpointSubnet:
+    type: azure-native:network:Subnet
+    properties:
+      resourceGroupName: ${rg.name}
+      virtualNetworkName: ${vnet.name}
+      subnetName: snet-${namePrefix}-endpoints
+      addressPrefix: ${endpointSubnetPrefix}
+    options:
+      dependsOn:
+        - ${dataSubnet}
+
+  postgresDns:
+    type: azure-native:network:PrivateZone
+    properties:
+      resourceGroupName: ${rg.name}
+      privateZoneName: privatelink.postgres.database.azure.com
+      location: global
+      tags: ${tags}
+
+  postgresDnsLink:
+    type: azure-native:network:VirtualNetworkLink
+    properties:
+      resourceGroupName: ${rg.name}
+      privateZoneName: ${postgresDns.name}
+      virtualNetworkLinkName: pdnslink-${namePrefix}
+      location: global
+      registrationEnabled: false
+      virtualNetwork:
+        id: ${vnet.id}
+
+  appNsgDiagnostics:
+    type: azure-native:insights:DiagnosticSetting
+    properties:
+      name: send-to-workspace
+      resourceUri: ${appNsg.id}
+      workspaceId: ${workspace.id}
+      logs:
+        - categoryGroup: allLogs
+          enabled: true
+
+  # Data
+  postgresPassword:
+    type: random:RandomPassword
+    properties:
+      length: 32
+      special: true
+
+  postgres:
+    type: azure-native:dbforpostgresql:Server
+    properties:
+      resourceGroupName: ${rg.name}
+      serverName: psql-${namePrefix}
+      version: "16"
+      sku:
+        name: ${postgresSku}
+        tier: GeneralPurpose
+      administratorLogin: parcelpoint
+      administratorLoginPassword: ${postgresPassword.result}
+      network:
+        delegatedSubnetResourceId: ${dataSubnet.id}
+        privateDnsZoneArmResourceId: ${postgresDns.id}
+        publicNetworkAccess: Disabled
+      storage:
+        storageSizeGB: 32
+      tags: ${tags}
+    options:
+      dependsOn:
+        - ${postgresDnsLink}
+
+  tracking:
+    type: azure-native:dbforpostgresql:Database
+    properties:
+      resourceGroupName: ${rg.name}
+      serverName: ${postgres.name}
+      databaseName: tracking
+      charset: UTF8
+      collation: en_US.utf8
+
+  labels:
+    type: azure-native:storage:StorageAccount
+    properties:
+      resourceGroupName: ${rg.name}
+      accountName:
+        fn::join:
+          - ""
+          - - st
+            - ${org}
+            - ${environment}
+            - labels
+      kind: StorageV2
+      sku:
+        name: ${storageSku}
+      publicNetworkAccess: Disabled
+      allowBlobPublicAccess: false
+      minimumTlsVersion: TLS1_2
+      tags: ${tags}
+
+  labelsContainer:
+    type: azure-native:storage:BlobContainer
+    properties:
+      resourceGroupName: ${rg.name}
+      accountName: ${labels.name}
+      containerName: labels
+
+  labelsEndpoint:
+    type: azure-native:network:PrivateEndpoint
+    properties:
+      resourceGroupName: ${rg.name}
+      privateEndpointName: pe-${namePrefix}-labels
+      subnet:
+        id: ${endpointSubnet.id}
+      privateLinkServiceConnections:
+        - name: blob
+          privateLinkServiceId: ${labels.id}
+          groupIds:
+            - blob
+      tags: ${tags}
+
+  serviceBus:
+    type: azure-native:servicebus:Namespace
+    properties:
+      resourceGroupName: ${rg.name}
+      namespaceName: sb-${namePrefix}
+      sku:
+        name: Standard
+      tags: ${tags}
+
+  carrierEvents:
+    type: azure-native:servicebus:Queue
+    properties:
+      resourceGroupName: ${rg.name}
+      namespaceName: ${serviceBus.name}
+      queueName: carrier-events
+      maxDeliveryCount: 10
+      lockDuration: PT1M
+      deadLetteringOnMessageExpiration: true
+
+  vault:
+    type: azure-native:keyvault:Vault
+    properties:
+      resourceGroupName: ${rg.name}
+      vaultName: kv-${namePrefix}
+      properties:
+        tenantId: ${clientConfig.tenantId}
+        sku:
+          family: A
+          name: standard
+        enableRbacAuthorization: true
+        enablePurgeProtection: true
+      tags: ${tags}
+
+  postgresPasswordSecret:
+    type: azure-native:keyvault:Secret
+    properties:
+      resourceGroupName: ${rg.name}
+      vaultName: ${vault.name}
+      secretName: postgres-password
+      properties:
+        value: ${postgresPassword.result}
+
+  # Monitoring
+  workspace:
+    type: azure-native:operationalinsights:Workspace
+    properties:
+      resourceGroupName: ${rg.name}
+      workspaceName: log-${namePrefix}
+      sku:
+        name: PerGB2018
+      retentionInDays: 30
+      tags: ${tags}
+
+  insights:
+    type: azure-native:applicationinsights:Component
+    properties:
+      resourceGroupName: ${rg.name}
+      resourceName: appi-${namePrefix}
+      kind: web
+      applicationType: web
+      workspaceResourceId: ${workspace.id}
+      tags: ${tags}
+
+  # Compute
+  identity:
+    type: azure-native:managedidentity:UserAssignedIdentity
+    properties:
+      resourceGroupName: ${rg.name}
+      resourceName: id-${namePrefix}-apps
+      tags: ${tags}
+
+  labelsAccess:
+    type: azure-native:authorization:RoleAssignment
+    properties:
+      principalId: ${identity.principalId}
+      principalType: ServicePrincipal
+      roleDefinitionId: /subscriptions/${clientConfig.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${roles.blobDataContributor}
+      scope: ${labels.id}
+
+  eventsAccess:
+    type: azure-native:authorization:RoleAssignment
+    properties:
+      principalId: ${identity.principalId}
+      principalType: ServicePrincipal
+      roleDefinitionId: /subscriptions/${clientConfig.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${roles.serviceBusDataReceiver}
+      scope: ${serviceBus.id}
+
+  vaultAccess:
+    type: azure-native:authorization:RoleAssignment
+    properties:
+      principalId: ${identity.principalId}
+      principalType: ServicePrincipal
+      roleDefinitionId: /subscriptions/${clientConfig.subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${roles.keyVaultSecretsUser}
+      scope: ${vault.id}
+
+  plan:
+    type: azure-native:web:AppServicePlan
+    properties:
+      resourceGroupName: ${rg.name}
+      name: asp-${namePrefix}
+      kind: linux
+      reserved: true
+      sku:
+        name: ${appSku}
+      tags: ${tags}
+
+  api:
+    type: azure-native:web:WebApp
+    properties:
+      resourceGroupName: ${rg.name}
+      name: app-${namePrefix}-api
+      kind: app,linux
+      serverFarmId: ${plan.id}
+      virtualNetworkSubnetId: ${appSubnet.id}
+      httpsOnly: true
+      identity:
+        type: UserAssigned
+        userAssignedIdentities:
+          - ${identity.id}
+      keyVaultReferenceIdentity: ${identity.id}
+      siteConfig:
+        linuxFxVersion: NODE|22-lts
+        alwaysOn: true
+        appSettings:
+          - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+            value: ${insights.connectionString}
+          - name: DATABASE_HOST
+            value: ${postgres.fullyQualifiedDomainName}
+          - name: DATABASE_PASSWORD
+            value: "@Microsoft.KeyVault(SecretUri=${postgresPasswordSecret.properties.secretUri})"
+          - name: LABELS_ACCOUNT
+            value: ${labels.name}
+      tags: ${tags}
+
+  worker:
+    type: azure-native:web:WebApp
+    properties:
+      resourceGroupName: ${rg.name}
+      name: func-${namePrefix}-events
+      kind: functionapp,linux
+      serverFarmId: ${plan.id}
+      virtualNetworkSubnetId: ${appSubnet.id}
+      httpsOnly: true
+      identity:
+        type: UserAssigned
+        userAssignedIdentities:
+          - ${identity.id}
+      siteConfig:
+        linuxFxVersion: NODE|22
+        appSettings:
+          - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+            value: ${insights.connectionString}
+          - name: AzureWebJobsStorage__accountName
+            value: ${labels.name}
+          - name: CARRIER_EVENTS_QUEUE
+            value: ${carrierEvents.name}
+          - name: DATABASE_HOST
+            value: ${postgres.fullyQualifiedDomainName}
+      tags: ${tags}
+
+outputs:
+  apiHostname: ${api.defaultHostName}

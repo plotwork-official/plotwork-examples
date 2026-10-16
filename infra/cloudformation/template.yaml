@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Parcelpoint's tracking API on AWS, the serverless flavour: an API in front of two functions, parcels in DynamoDB,
+  label PDFs in S3, and carrier events on an SQS queue with a dead-letter queue. Every name is
+  parcel-<environment>-<role>.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+    Description: The environment this stack makes.
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    Tags:
+      application: parcelpoint
+      environment: !Ref Environment
+      managed_by: cloudformation
+
+Resources:
+  TrackingApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'parcel-${Environment}-api'
+      StageName: !Ref Environment
+
+  TrackParcel:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'parcel-${Environment}-track'
+      Handler: track.handler
+      MemorySize: !If [IsProd, 1024, 512]
+      Environment:
+        Variables:
+          PARCELS_TABLE: !Ref Parcels
+          LABELS_BUCKET: !Ref Labels
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref Parcels
+        - S3ReadPolicy:
+            BucketName: !Ref Labels
+      Events:
+        Track:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TrackingApi
+            Path: /parcels/{id}
+            Method: get
+
+  CarrierEvents:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'parcel-${Environment}-events'
+      Handler: events.handler
+      Environment:
+        Variables:
+          PARCELS_TABLE: !Ref Parcels
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Parcels
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CarrierEventsQueue.Arn
+            BatchSize: 10
+
+  Parcels:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'parcel-${Environment}-parcels'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  Labels:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'parcel-${Environment}-labels'
+
+  CarrierEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'parcel-${Environment}-carrier-events'
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt CarrierEventsDeadLetters.Arn
+        maxReceiveCount: 5
+
+  CarrierEventsDeadLetters:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'parcel-${Environment}-carrier-events-dlq'
+
+Outputs:
+  ApiUrl:
+    Description: Where the tracking API answers.
+    Value: !Sub 'https://${TrackingApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'

@@ -3,13 +3,85 @@
   "sources": [
     {
       "name": "infra",
-      "from": "infra/*.tf",
+      "from": [
+        "infra/terraform/**/*.tf",
+        "infra/terraform/**/*.tfvars"
+      ],
       "format": "terraform",
+      "options": {
+        "root": "envs/prod"
+      },
       "out": "docs/infra.diagram",
-      "title": "Parcelpoint on AWS",
+      "title": "Parcelpoint on Azure",
       "publish": {
         "alias": "parcelpoint-infra"
       }
+    },
+    {
+      "name": "infra-dev",
+      "from": [
+        "infra/terraform/**/*.tf",
+        "infra/terraform/**/*.tfvars"
+      ],
+      "format": "terraform",
+      "options": {
+        "root": "envs/dev"
+      },
+      "out": "docs/infra-dev.diagram",
+      "title": "Parcelpoint on Azure, development"
+    },
+    {
+      "name": "infra-bicep",
+      "from": "infra/bicep",
+      "format": "bicep",
+      "options": {
+        "varFiles": [
+          "infra/bicep/main.prod.bicepparam"
+        ]
+      },
+      "out": "docs/infra-bicep.diagram",
+      "title": "Parcelpoint on Azure, from Bicep"
+    },
+    {
+      "name": "infra-arm",
+      "from": "infra/arm",
+      "format": "arm",
+      "options": {
+        "varFiles": [
+          "infra/arm/azuredeploy.parameters.json"
+        ]
+      },
+      "out": "docs/infra-arm.diagram",
+      "title": "Parcelpoint's label and event services, from an ARM template"
+    },
+    {
+      "name": "infra-pulumi",
+      "from": [
+        "infra/pulumi/Pulumi.yaml",
+        "infra/pulumi/Pulumi.prod.yaml"
+      ],
+      "format": "pulumi",
+      "options": {
+        "varFiles": [
+          "infra/pulumi/Pulumi.prod.yaml"
+        ]
+      },
+      "out": "docs/infra-pulumi.diagram",
+      "title": "Parcelpoint on Azure, from Pulumi"
+    },
+    {
+      "name": "infra-pulumi-state",
+      "from": "infra/pulumi/stack-export.json",
+      "format": "pulumi",
+      "out": "docs/infra-pulumi-state.diagram",
+      "title": "Parcelpoint on Azure, from a Pulumi stack export"
+    },
+    {
+      "name": "infra-aws",
+      "from": "infra/cloudformation/template.yaml",
+      "format": "cloudformation",
+      "out": "docs/infra-aws.diagram",
+      "title": "Parcelpoint on AWS, from CloudFormation"
     },
     {
       "name": "services",

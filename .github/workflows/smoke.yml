@@ -152,7 +152,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
-          printf '\nresource "aws_sqs_queue" "smoke_dead_letters" {\n  name = "smoke-dead-letters"\n}\n' >> infra/data.tf
+          printf '\nresource "azurerm_storage_queue" "smoke_dead_letters" {\n  name               = "smoke-dead-letters"\n  storage_account_id = module.data.storage_account_id\n}\n' >> infra/terraform/envs/prod/main.tf
 
       - id: drift
         if: ${{ !cancelled() }}
@@ -245,7 +245,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
-          node -e 'const fs = require("fs"); const path = "docs/infra.overrides.json"; const o = JSON.parse(fs.readFileSync(path, "utf8")); o.items["aws_sqs_queue.gone"] = { label: "Gone" }; fs.writeFileSync(path, JSON.stringify(o, null, 2) + "\n")'
+          node -e 'const fs = require("fs"); const path = "docs/infra.overrides.json"; const o = JSON.parse(fs.readFileSync(path, "utf8")); o.items["azurerm_storage_queue.gone"] = { label: "Gone" }; fs.writeFileSync(path, JSON.stringify(o, null, 2) + "\n")'
 
       - id: overrides
         if: ${{ !cancelled() }}

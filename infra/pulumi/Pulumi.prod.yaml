@@ -1,0 +1,10 @@
+config:
+  azure-native:location: westeurope
+  parcelpoint:environment: prod
+  parcelpoint:addressSpace: 10.20.0.0/16
+  parcelpoint:appSubnetPrefix: 10.20.1.0/24
+  parcelpoint:dataSubnetPrefix: 10.20.2.0/24
+  parcelpoint:endpointSubnetPrefix: 10.20.3.0/24
+  parcelpoint:appSku: P1v3
+  parcelpoint:postgresSku: Standard_D2ds_v5
+  parcelpoint:storageSku: Standard_ZRS
