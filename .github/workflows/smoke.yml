@@ -150,7 +150,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes "@buun_group/plotwork@$CLI" generate --check --format json > cli-clean.json || true
-          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-clean.json", "utf8")); const moved = plan.diagrams.filter((diagram) => diagram.failed || (diagram.diff?.changes ?? []).length > 0); if (moved.length > 0) { console.log("::error::(a) the command line finds changes on a clean tree: " + moved.map((diagram) => diagram.name).join(", ")); process.exit(1) }'
+          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-clean.json", "utf8")); const moved = (plan.sources ?? plan.diagrams).filter((diagram) => diagram.failed || diagram.status === "failed" || (diagram.changes ?? diagram.diff?.changes ?? []).length > 0); if (moved.length > 0) { console.log("::error::(a) the command line finds changes on a clean tree: " + moved.map((diagram) => diagram.name).join(", ")); process.exit(1) }'
 
       # (b) A new resource is drift, named by its node.
       - name: Add a Terraform resource
@@ -187,7 +187,7 @@ jobs:
         run: |
           set -euo pipefail
           if npx --yes "@buun_group/plotwork@$CLI" generate --check --format json > cli-drift.json; then echo "::error::(b) the command line passed where the Action failed."; exit 1; fi
-          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-drift.json", "utf8")); const infra = plan.diagrams.find((diagram) => diagram.out === "docs/infra.diagram"); const named = (infra?.diff?.changes ?? []).some((change) => change.name === "smoke_dead_letters"); if (!named) { console.log("::error::(b) the command line does not name smoke_dead_letters."); process.exit(1) }'
+          node -e 'const plan = JSON.parse(require("fs").readFileSync("cli-drift.json", "utf8")); const infra = (plan.sources ?? plan.diagrams).find((diagram) => diagram.out === "docs/infra.diagram"); const named = (infra?.changes ?? infra?.diff?.changes ?? []).some((change) => change.name === "smoke_dead_letters"); if (!named) { console.log("::error::(b) the command line does not name smoke_dead_letters."); process.exit(1) }'
 
       # (c) Write mode opens a pull request on this run's own branch. The resource, and any picture the prepare step redrew, is
       # committed in the job (never pushed by itself), so the pull request carries it with the diagram and its check passes.
