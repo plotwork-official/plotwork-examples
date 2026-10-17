@@ -1,0 +1,68 @@
+# A reusable workflow for diagrams as code that writes: makes the diagrams again from their files and opens or edits one
+# pull request with them. Run it on a push to the default branch or on a schedule, never on a pull request from a fork.
+#
+#   jobs:
+#     diagrams:
+#       uses: plotwork-official/plotwork-examples/.github/workflows/plotwork-regenerate.yml@<commit SHA>
+#       permissions:
+#         contents: write
+#         pull-requests: write
+#       secrets:
+#         PLOTWORK_API_KEY: ${{ secrets.PLOTWORK_API_KEY }}
+#
+# The repository must allow GitHub Actions to create pull requests (Settings, Actions, General). Publishing reads the secret
+# PLOTWORK_API_KEY, which the caller passes by name or with secrets: inherit; without it nothing is published.
+
+name: plotwork-regenerate
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: The folder of the team's settings file, relative to the repository root.
+        type: string
+        default: '.'
+      config:
+        description: The settings file, relative to working-directory. Empty finds plotwork.config.json.
+        type: string
+        default: ''
+      publish:
+        description: Publish the sources that have a publish section with the secret PLOTWORK_API_KEY.
+        type: boolean
+        default: false
+      api-url:
+        description: The Plotwork API the key belongs to. Empty is the hosted one.
+        type: string
+        default: ''
+    secrets:
+      PLOTWORK_API_KEY:
+        required: false
+
+permissions: {}
+
+jobs:
+  write:
+    name: Regenerate and open a pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # push the pull request branch
+      pull-requests: write # open, edit, or close the pull request
+    # Never cancelled: a run that is pushing finishes, and the next one starts from what it pushed.
+    concurrency:
+      group: plotwork-write-${{ github.ref }}-${{ inputs.working-directory }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: plotwork-official/plotwork-action@0b80d170aa32522a074ce8c736aaddae613d0382 # v1.0.0-beta.3
+        with:
+          command: generate
+          mode: write
+          working-directory: ${{ inputs.working-directory }}
+          config: ${{ inputs.config }}
+          publish: ${{ inputs.publish }}
+        env:
+          PLOTWORK_API_KEY: ${{ secrets.PLOTWORK_API_KEY }}
+          PLOTWORK_API_URL: ${{ inputs.api-url }}

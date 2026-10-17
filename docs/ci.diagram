@@ -5,8 +5,8 @@ flow "Pull request checks" direction=down desc="2 jobs and their steps of the ch
 
 node on terminal "Pull request or push"
 
-group job_generated "Generated diagrams match their files" sub="Calls plotwork.yml" {
-  node generated step "Generated diagrams match their files" sub="Calls plotwork.yml"
+group job_generated "Generated diagrams match their files" sub="Calls plotwork-check.yml" {
+  node generated step "Generated diagrams match their files" sub="Calls plotwork-check.yml"
 }
 
 group job_diagrams "Hand-written diagrams are valid and drawn" sub="ubuntu-latest" {

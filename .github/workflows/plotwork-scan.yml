@@ -1,0 +1,63 @@
+# A reusable workflow for diagrams as code, with code scanning: fails when a generated diagram no longer matches the files
+# it is made from, and uploads each drifted diagram and each problem as a code scanning alert on its line.
+#
+#   jobs:
+#     diagrams:
+#       uses: plotwork-official/plotwork-examples/.github/workflows/plotwork-scan.yml@<commit SHA>
+#       permissions:
+#         contents: read
+#         security-events: write
+#
+# It uses no secret and the check makes no network request; only the upload talks to GitHub. plotwork-check.yml is the same
+# check without the upload, for callers that grant read access only.
+
+name: plotwork-scan
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: The folder of the team's settings file, relative to the repository root.
+        type: string
+        default: '.'
+      config:
+        description: The settings file, relative to working-directory. Empty finds plotwork.config.json.
+        type: string
+        default: ''
+      changed-only:
+        description: On a pull request, check only the sources whose files the pull request changes.
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  check-and-scan:
+    name: Diagrams match their files, with code scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write # upload the SARIF report
+    concurrency:
+      group: plotwork-check-${{ github.ref }}-${{ inputs.working-directory }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ inputs.changed-only && 0 || 1 }}
+      - id: plotwork
+        uses: plotwork-official/plotwork-action@0b80d170aa32522a074ce8c736aaddae613d0382 # v1.0.0-beta.3
+        with:
+          command: generate
+          working-directory: ${{ inputs.working-directory }}
+          config: ${{ inputs.config }}
+          since: ${{ inputs.changed-only && github.event.pull_request.base.sha || '' }}
+          sarif-file: plotwork.sarif
+      # Uploaded whether or not the check passed, so a fixed diagram closes its alert.
+      - if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: ${{ inputs.working-directory }}/plotwork.sarif
+          category: plotwork-${{ inputs.working-directory }}

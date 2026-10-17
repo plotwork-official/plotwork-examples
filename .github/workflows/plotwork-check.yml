@@ -1,0 +1,61 @@
+# A reusable workflow for diagrams as code: fails when a generated diagram no longer matches the files it is made from.
+# A platform team calls it from every repository, pinned by commit SHA:
+#
+#   jobs:
+#     diagrams:
+#       uses: plotwork-official/plotwork-examples/.github/workflows/plotwork-check.yml@<commit SHA>
+#       permissions:
+#         contents: read
+#
+# It needs read access only, uses no token or secret, and makes no network request, so it is safe on a pull request from
+# a fork. Each reusable workflow here asks for one set of permissions, because GitHub checks every job of a called workflow
+# against what the caller grants, even a job that would be skipped:
+#
+#   workflow                  the caller grants
+#   plotwork-check.yml        contents: read
+#   plotwork-scan.yml         contents: read, security-events: write
+#   plotwork-regenerate.yml   contents: write, pull-requests: write
+#
+# This repository's own check.yml calls it.
+
+name: plotwork-check
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: The folder of the team's settings file, relative to the repository root.
+        type: string
+        default: '.'
+      config:
+        description: The settings file, relative to working-directory. Empty finds plotwork.config.json.
+        type: string
+        default: ''
+      changed-only:
+        description: On a pull request, check only the sources whose files the pull request changes.
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  check:
+    name: Diagrams match their files
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: plotwork-check-${{ github.ref }}-${{ inputs.working-directory }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ inputs.changed-only && 0 || 1 }}
+      - uses: plotwork-official/plotwork-action@0b80d170aa32522a074ce8c736aaddae613d0382 # v1.0.0-beta.3
+        with:
+          command: generate
+          working-directory: ${{ inputs.working-directory }}
+          config: ${{ inputs.config }}
+          since: ${{ inputs.changed-only && github.event.pull_request.base.sha || '' }}
