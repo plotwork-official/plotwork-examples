@@ -242,8 +242,20 @@ jobs:
             sleep 10
           done
           if [ -z "$run" ]; then echo "::notice::(c) pull request $NUMBER started no check run in two minutes, as one opened with a token that starts no workflow does, so its check was not asserted."; exit 0; fi
-          gh run watch "$run" --repo "$GITHUB_REPOSITORY" --interval 15 > /dev/null || true
-          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq .conclusion)
+          # A pull request opened with the workflow's own token is by github-actions[bot], which GitHub treats as a first-time
+          # contributor: its run waits for a maintainer's approval (action_required) and never starts on its own. That is
+          # GitHub's rule, not a failure of the Action; pass an App or personal token in github-token to have checks run.
+          conclusion=''
+          for _ in $(seq 1 60); do
+            read -r status conclusion < <(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq '"\(.status) \(.conclusion // "")"')
+            if [ "$status" = completed ] || [ "$status" = action_required ] || [ "$conclusion" = action_required ]; then break; fi
+            sleep 15
+          done
+          if [ "$status" = action_required ] || [ "$conclusion" = action_required ]; then
+            gh run cancel "$run" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || true
+            echo "::notice::(c) the check run of pull request $NUMBER waits for approval, as GitHub holds every run of a pull request opened with the workflow's own token, so its check was not asserted: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"
+            exit 0
+          fi
           test "$conclusion" = success || { echo "::error::(c) the check run of pull request $NUMBER ended $conclusion: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"; exit 1; }
           echo "The check run of pull request $NUMBER passed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" >> "$GITHUB_STEP_SUMMARY"
 
