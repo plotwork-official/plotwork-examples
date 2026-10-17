@@ -73,3 +73,8 @@ module "compute" {
 
   application_insights_connection_string = module.monitoring.application_insights_connection_string
 }
+
+resource "azurerm_storage_queue" "smoke_dead_letters" {
+  name               = "smoke-dead-letters"
+  storage_account_id = module.data.storage_account_id
+}
