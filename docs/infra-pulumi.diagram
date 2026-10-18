@@ -29,23 +29,23 @@ group azure_account "Azure subscription" type=account {
       }
     }
 
-    group postgres_group "psql-parcel-prod" icon=azure:database-for-postgresql {
+    group postgres_group "psql-parcel-prod" type=data-tier icon=azure:database-for-postgresql {
       node postgres_password service "Postgres password" sub="Password" icon=lucide:key-round
       node postgres database "PostgreSQL flexible server" sub="Standard_D2ds_v5" icon=azure:database-for-postgresql
       node tracking database "tracking" sub="Database" icon=azure:database-for-postgresql
     }
 
-    group labels_group "stparcelprodlabels" icon=azure:storage-accounts {
+    group labels_group "stparcelprodlabels" type=storage-account icon=azure:storage-accounts {
       node labels storage "Storage account" icon=azure:storage-accounts
       node labels_container storage "labels" sub="Blob container" icon=azure:storage-container
     }
 
-    group service_bus_group "sb-parcel-prod" icon=azure:service-bus {
+    group service_bus_group "sb-parcel-prod" type=messaging icon=azure:service-bus {
       node service_bus queue "Service Bus namespace" sub="Standard" icon=azure:service-bus
       node carrier_events queue "carrier-events" sub="Service Bus queue" icon=azure:service-bus
     }
 
-    group vault_group "kv-parcel-prod" icon=azure:key-vault {
+    group vault_group "kv-parcel-prod" type=security icon=azure:key-vault {
       node vault secret "Key Vault" icon=azure:key-vault
       node postgres_password_secret secret "postgres-password" sub="Secret" icon=azure:keys
     }
@@ -60,22 +60,22 @@ group azure_account "Azure subscription" type=account {
 
 postgres_dns -> vnet_network : "DNS link"
 app_nsg -> workspace : "diagnostics"
-postgres -> postgres_password : "password"
+postgres -> postgres_password : "password" icon=lucide:key-round role=identity
 postgres -> data_subnet_subnet : "subnet"
 postgres -> postgres_dns : "DNS"
-labels_endpoint -> labels : "private link"
+labels_endpoint -> labels : "private link" icon=lucide:lock role=private
 labels_endpoint -> endpoint_subnet_subnet : "subnet"
 postgres_password_secret -> postgres_password : "holds"
-insights -> workspace : "logs"
-identity -> labels : "Storage Blob Data Contributor"
-identity -> service_bus : "Azure Service Bus Data Receiver"
-identity -> vault : "Key Vault Secrets User"
-plan_service_plan -> app_subnet_subnet : "VNet integration (2)"
-plan_service_plan -> identity : "identity (2)"
-plan_service_plan -> insights : "telemetry (2)"
-plan_service_plan -> postgres : "data (2)"
-api -> postgres_password_secret : "secret"
-plan_service_plan -> labels : "storage (2)"
-worker -> carrier_events : "messages"
+insights -> workspace : "logs" icon=lucide:activity
+identity -> labels : "Storage Blob Data Contributor" icon=lucide:key-round role=identity
+identity -> service_bus : "Azure Service Bus Data Receiver" icon=lucide:key-round role=identity
+identity -> vault : "Key Vault Secrets User" icon=lucide:key-round role=identity
+plan_service_plan -> app_subnet_subnet : "VNet integration (2)" icon=lucide:lock role=private
+plan_service_plan -> identity : "identity (2)" icon=lucide:key-round role=identity
+plan_service_plan -> insights : "telemetry (2)" icon=lucide:activity
+plan_service_plan -> postgres : "data (2)" icon=lucide:database role=data
+api -> postgres_password_secret : "secret" icon=lucide:key-round role=identity
+plan_service_plan -> labels : "storage (2)" icon=lucide:database role=data
+worker -> carrier_events : "messages" icon=lucide:send role=async
 tracking -> postgres : "part of"
 labels_container -> labels : "part of"

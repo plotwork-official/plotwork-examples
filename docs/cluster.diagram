@@ -11,9 +11,9 @@ node postgres_data storage "postgres-data" sub="PersistentVolumeClaim, 20Gi" ico
 node tracking_config storage "tracking-config" sub="ConfigMap" icon=lucide:settings-2
 node tracking_db secret "tracking-db" sub="Secret" icon=lucide:key-round
 
-tracking -> tracking_api : "api.parcelpoint.example"
-tracking_api --> tracking_config : "reads"
-tracking_api --> tracking_db : "reads"
-event_worker --> tracking_config : "reads"
-event_worker --> tracking_db : "reads"
-postgres -> postgres_data : "mounts"
+tracking -> tracking_api : "api.parcelpoint.example" icon=lucide:globe
+tracking_api --> tracking_config : "reads" icon=lucide:eye
+tracking_api --> tracking_db : "reads" icon=lucide:key-round role=identity
+event_worker --> tracking_config : "reads" icon=lucide:eye
+event_worker --> tracking_db : "reads" icon=lucide:key-round role=identity
+postgres -> postgres_data : "mounts" icon=lucide:hard-drive role=data
