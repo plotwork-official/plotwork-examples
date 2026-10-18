@@ -6,7 +6,8 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 
 | Question | Answer |
 |---|---|
-| Where are the diagrams? | In `docs/`: one `.diagram` file with a light and a dark SVG for each source, and one in a fence of [docs/architecture.md](docs/architecture.md). Hand-written examples of other kinds are in [diagrams/](diagrams/README.md). |
+| Where are the diagrams? | All on one page: [the gallery](docs/README.md). In `docs/`: one `.diagram` file and one SVG for each source, and one in a fence of [docs/architecture.md](docs/architecture.md). Hand-written examples of other kinds are in [diagrams/](diagrams/README.md). |
+| Why do the pictures look right in GitHub's dark mode? | `"schemes": "auto"` in the `defaults` of [plotwork.config.json](plotwork.config.json): each SVG holds a light and a dark version and shows the one the reader's theme uses, as a file, a link, or a plain `<img>`. |
 | What says which file makes which diagram? | The `sources` of [plotwork.config.json](plotwork.config.json). |
 | How do I change a generated diagram? | In its overrides file, such as [docs/infra.overrides.json](docs/infra.overrides.json), which relabels three resources. Never in the generated file. |
 | What fails a pull request? | [check.yml](.github/workflows/check.yml): a generated diagram that no longer matches its files, or a hand-written diagram with an error. |
@@ -40,6 +41,7 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 | `pipelines/gitlab/.gitlab-ci.yml` | The webhook sender's pipeline on GitLab, where its mirror runs: `needs`, `rules`, a manual deploy, and two triggers. | `docs/ci-gitlab.diagram` |
 | `pipelines/azure/azure-pipelines.yml` | The label service's pipeline on Azure Pipelines: stages, `dependsOn`, and deployment jobs to environments. | `docs/ci-azure.diagram` |
 | `data/shipments.csv` | Monthly shipments by region. | `docs/shipments.diagram` |
+| `docs/README.md` | The gallery: every generated diagram, with what it is made from. | |
 | `diagrams/` | Hand-written diagrams of other kinds. | |
 
 ## The smoke test

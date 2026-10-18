@@ -1,5 +1,8 @@
 {
   "$schema": "https://docs.plotwork.dev/schemas/plotwork.config.json",
+  "defaults": {
+    "schemes": "auto"
+  },
   "sources": [
     {
       "name": "infra",
