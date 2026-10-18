@@ -1,0 +1,62 @@
+{
+ "Resources": {
+  "OnCall4B8E1D53": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "DisplayName": "Label printing alerts",
+    "TopicName": "parcel-prod-label-alerts",
+    "Tags": [
+     {
+      "Key": "application",
+      "Value": "parcelpoint"
+     },
+     {
+      "Key": "environment",
+      "Value": "prod"
+     },
+     {
+      "Key": "managed_by",
+      "Value": "cdk"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "LabelPrinting/Alerts/OnCall/Resource"
+   }
+  },
+  "DeadLettersAlarm6A1D3F88": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "OnCall4B8E1D53"
+     }
+    ],
+    "AlarmDescription": "A label request failed five times.",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "QueueName",
+      "Value": {
+       "Ref": "referencetoLabelPrintingPrintingRequestsDeadLetters3B7E0A14QueueName"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "ApproximateNumberOfMessagesVisible",
+    "Namespace": "AWS/SQS",
+    "Period": 300,
+    "Statistic": "Maximum",
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "LabelPrinting/Alerts/DeadLettersAlarm/Resource"
+   }
+  }
+ },
+ "Parameters": {
+  "referencetoLabelPrintingPrintingRequestsDeadLetters3B7E0A14QueueName": {
+   "Type": "String"
+  }
+ }
+}

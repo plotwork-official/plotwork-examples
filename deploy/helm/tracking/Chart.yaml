@@ -1,0 +1,26 @@
+apiVersion: v2
+name: tracking
+description: Parcelpoint's tracking API and carrier event worker, with the database and queue they use.
+type: application
+version: 0.4.0
+appVersion: 1.8.2
+home: https://parcelpoint.example
+maintainers:
+  - name: Platform team
+    email: platform@parcelpoint.example
+dependencies:
+  - name: postgresql
+    version: 15.x.x
+    repository: oci://registry-1.docker.io/bitnamicharts
+  - name: rabbitmq
+    version: 14.x.x
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: rabbitmq.enabled
+  - name: redis
+    alias: cache
+    version: 19.x.x
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: cache.enabled
+  - name: parcelpoint-common
+    version: 0.2.0
+    repository: file://charts/parcelpoint-common

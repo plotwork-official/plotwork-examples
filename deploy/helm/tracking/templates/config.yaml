@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "parcelpoint.fullname" . }}-config
+  labels:
+    {{- include "parcelpoint.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: info
+  DATABASE_HOST: {{ .Release.Name }}-postgresql
+  QUEUE_HOST: {{ .Release.Name }}-rabbitmq

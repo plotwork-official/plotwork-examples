@@ -84,6 +84,13 @@
       "title": "Parcelpoint on AWS, from CloudFormation"
     },
     {
+      "name": "infra-cdk",
+      "from": "infra/cdk/cdk.out",
+      "format": "cdk",
+      "out": "docs/infra-cdk.diagram",
+      "title": "Parcelpoint's label printing on AWS, from the CDK"
+    },
+    {
       "name": "services",
       "from": "compose.yaml",
       "format": "compose",
@@ -96,6 +103,37 @@
       "format": "kubernetes",
       "out": "docs/cluster.diagram",
       "title": "Parcelpoint on Kubernetes"
+    },
+    {
+      "name": "helm-chart",
+      "from": [
+        "deploy/helm/tracking",
+        "!deploy/helm/tracking/templates/**"
+      ],
+      "format": "helm",
+      "out": "docs/helm-chart.diagram",
+      "title": "The tracking chart and what it depends on"
+    },
+    {
+      "name": "helm-release",
+      "from": "deploy/helm/rendered/tracking.yaml",
+      "format": "helm",
+      "out": "docs/helm-release.diagram",
+      "title": "The tracking release, from helm template"
+    },
+    {
+      "name": "kustomize",
+      "from": "deploy/kustomize/webhook-sender",
+      "format": "kustomize",
+      "out": "docs/kustomize.diagram",
+      "title": "The webhook sender's overlays, bases, and components"
+    },
+    {
+      "name": "kustomize-prod",
+      "from": "deploy/kustomize/built/webhook-sender-prod.yaml",
+      "format": "kustomize",
+      "out": "docs/kustomize-prod.diagram",
+      "title": "The webhook sender in production, from kustomize build"
     },
     {
       "name": "api",
@@ -113,6 +151,39 @@
       "title": "Who may call each endpoint"
     },
     {
+      "name": "catalog",
+      "from": [
+        "catalog",
+        "!catalog/org/users.yaml"
+      ],
+      "format": "backstage",
+      "out": "docs/catalog.diagram",
+      "title": "Parcelpoint's software catalog"
+    },
+    {
+      "name": "catalog-teams",
+      "from": "catalog",
+      "format": "backstage",
+      "options": {
+        "groupBy": "owner"
+      },
+      "out": "docs/catalog-teams.diagram",
+      "title": "Who owns what in Parcelpoint's catalog"
+    },
+    {
+      "name": "c4-containers",
+      "from": "architecture/workspace.dsl",
+      "format": "structurizr",
+      "out": "docs/c4-containers.diagram"
+    },
+    {
+      "name": "events",
+      "from": "events",
+      "format": "asyncapi",
+      "out": "docs/events.diagram",
+      "title": "Parcel events on RabbitMQ"
+    },
+    {
       "name": "database",
       "from": "db/schema.sql",
       "format": "sql",
@@ -125,6 +196,20 @@
       "format": "github-actions",
       "out": "docs/ci.diagram",
       "title": "Pull request checks"
+    },
+    {
+      "name": "ci-gitlab",
+      "from": "pipelines/gitlab/.gitlab-ci.yml",
+      "format": "gitlab-ci",
+      "out": "docs/ci-gitlab.diagram",
+      "title": "The webhook sender's GitLab pipeline"
+    },
+    {
+      "name": "ci-azure",
+      "from": "pipelines/azure/azure-pipelines.yml",
+      "format": "azure-pipelines",
+      "out": "docs/ci-azure.diagram",
+      "title": "The label service's Azure pipeline"
     },
     {
       "name": "shipments",

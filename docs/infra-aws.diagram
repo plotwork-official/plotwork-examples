@@ -14,8 +14,8 @@ group aws_account "AWS account" type=account {
 }
 
 tracking_api -> track_parcel : "GET /parcels/{id}"
-track_parcel -> parcels : "data"
-track_parcel -> labels : "storage"
-carrier_events -> parcels : "data"
-carrier_events_queue -> carrier_events_dead_letters : "dead letters"
-carrier_events_queue -> carrier_events : "triggers"
+track_parcel -> parcels : "data" icon=lucide:database role=data
+track_parcel -> labels : "storage" icon=lucide:database role=data
+carrier_events -> parcels : "data" icon=lucide:database role=data
+carrier_events_queue -> carrier_events_dead_letters : "dead letters" icon=lucide:send role=async
+carrier_events_queue -> carrier_events : "triggers" icon=lucide:zap

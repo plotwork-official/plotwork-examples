@@ -1,0 +1,127 @@
+{
+ "version": "tree-0.1",
+ "tree": {
+  "id": "App",
+  "path": "",
+  "constructInfo": {
+   "fqn": "aws-cdk-lib.App",
+   "version": "2.160.0"
+  },
+  "children": {
+   "LabelStorage": {
+    "id": "LabelStorage",
+    "path": "LabelStorage",
+    "constructInfo": {
+     "fqn": "aws-cdk-lib.Stack",
+     "version": "2.160.0"
+    },
+    "children": {
+     "Labels": {
+      "id": "Labels",
+      "path": "LabelStorage/Labels",
+      "constructInfo": {
+       "fqn": "aws-cdk-lib.aws_s3.Bucket",
+       "version": "2.160.0"
+      }
+     }
+    }
+   },
+   "LabelPrinting": {
+    "id": "LabelPrinting",
+    "path": "LabelPrinting",
+    "constructInfo": {
+     "fqn": "aws-cdk-lib.Stack",
+     "version": "2.160.0"
+    },
+    "children": {
+     "Api": {
+      "id": "Api",
+      "path": "LabelPrinting/Api",
+      "constructInfo": {
+       "fqn": "constructs.Construct",
+       "version": "2.160.0"
+      },
+      "children": {
+       "Intake": {
+        "id": "Intake",
+        "path": "LabelPrinting/Api/Intake",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_lambda.Function",
+         "version": "2.160.0"
+        }
+       }
+      }
+     },
+     "Printing": {
+      "id": "Printing",
+      "path": "LabelPrinting/Printing",
+      "constructInfo": {
+       "fqn": "constructs.Construct",
+       "version": "2.160.0"
+      },
+      "children": {
+       "RequestsDeadLetters": {
+        "id": "RequestsDeadLetters",
+        "path": "LabelPrinting/Printing/RequestsDeadLetters",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_sqs.Queue",
+         "version": "2.160.0"
+        }
+       },
+       "Requests": {
+        "id": "Requests",
+        "path": "LabelPrinting/Printing/Requests",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_sqs.Queue",
+         "version": "2.160.0"
+        }
+       },
+       "Jobs": {
+        "id": "Jobs",
+        "path": "LabelPrinting/Printing/Jobs",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_dynamodb.Table",
+         "version": "2.160.0"
+        }
+       },
+       "Renderer": {
+        "id": "Renderer",
+        "path": "LabelPrinting/Printing/Renderer",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_lambda.Function",
+         "version": "2.160.0"
+        }
+       }
+      }
+     },
+     "Alerts": {
+      "id": "Alerts",
+      "path": "LabelPrinting/Alerts",
+      "constructInfo": {
+       "fqn": "aws-cdk-lib.NestedStack",
+       "version": "2.160.0"
+      },
+      "children": {
+       "OnCall": {
+        "id": "OnCall",
+        "path": "LabelPrinting/Alerts/OnCall",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_sns.Topic",
+         "version": "2.160.0"
+        }
+       },
+       "DeadLettersAlarm": {
+        "id": "DeadLettersAlarm",
+        "path": "LabelPrinting/Alerts/DeadLettersAlarm",
+        "constructInfo": {
+         "fqn": "aws-cdk-lib.aws_cloudwatch.Alarm",
+         "version": "2.160.0"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

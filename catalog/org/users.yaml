@@ -1,0 +1,49 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: mara.lindqvist
+spec:
+  profile:
+    displayName: Mara Lindqvist
+    email: mara.lindqvist@parcelpoint.example
+  memberOf: [team-tracking]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: tobi.adeyemi
+spec:
+  profile:
+    displayName: Tobi Adeyemi
+    email: tobi.adeyemi@parcelpoint.example
+  memberOf: [team-tracking]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: priya.raman
+spec:
+  profile:
+    displayName: Priya Raman
+    email: priya.raman@parcelpoint.example
+  memberOf: [team-labels]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: jonas.weber
+spec:
+  profile:
+    displayName: Jonas Weber
+    email: jonas.weber@parcelpoint.example
+  memberOf: [team-integrations]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: ana.costa
+spec:
+  profile:
+    displayName: Ana Costa
+    email: ana.costa@parcelpoint.example
+  memberOf: [engineering]

@@ -1,0 +1,40 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: engineering
+  title: Engineering
+spec:
+  type: department
+  profile:
+    email: engineering@parcelpoint.example
+  children: [team-tracking, team-labels, team-integrations]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-tracking
+  title: Tracking team
+spec:
+  type: team
+  parent: engineering
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-labels
+  title: Labels team
+spec:
+  type: team
+  parent: engineering
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-integrations
+  title: Integrations team
+spec:
+  type: team
+  parent: engineering
+  children: []

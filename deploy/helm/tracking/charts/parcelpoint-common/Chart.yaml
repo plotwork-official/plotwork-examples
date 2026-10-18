@@ -1,0 +1,5 @@
+apiVersion: v2
+name: parcelpoint-common
+description: The labels and names every Parcelpoint chart shares.
+type: library
+version: 0.2.0

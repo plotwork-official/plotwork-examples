@@ -1,0 +1,52 @@
+# Parcelpoint's software catalog: one domain, three systems, and where each team's entities live.
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: parcelpoint
+  description: Every catalog file of the Parcelpoint repository.
+spec:
+  targets:
+    - ./org/groups.yaml
+    - ./org/users.yaml
+    - ./tracking/catalog-info.yaml
+    - ./labels/catalog-info.yaml
+    - ./integrations/catalog-info.yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: delivery
+  title: Parcel delivery
+  description: Everything between a merchant creating a shipment and a customer receiving the parcel.
+spec:
+  owner: engineering
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: tracking
+  title: Tracking
+  description: Shipments, parcels, and the carrier events that move them along.
+spec:
+  owner: team-tracking
+  domain: delivery
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: labels
+  title: Label printing
+  description: Renders each carrier's shipping label as a PDF.
+spec:
+  owner: team-labels
+  domain: delivery
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: merchant-integrations
+  title: Merchant integrations
+  description: What merchants build on: the dashboard, the SDK, and webhooks.
+spec:
+  owner: team-integrations
+  domain: delivery

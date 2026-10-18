@@ -1,0 +1,19 @@
+asyncapi: '2.6.0'
+info:
+  title: Webhook sender
+  version: 1.3.0
+  description: Posts each parcel's new status to the webhooks its merchant registered.
+servers:
+  production:
+    url: tracking-rabbitmq.tracking:5672
+    protocol: amqp
+    description: The tracking release's RabbitMQ.
+channels:
+  parcel.status:
+    description: Read with a queue of the sender's own, so a slow merchant holds up no one else.
+    publish:
+      operationId: postToWebhooks
+      message:
+        oneOf:
+          - name: ParcelStatusChanged
+          - name: ParcelDelivered

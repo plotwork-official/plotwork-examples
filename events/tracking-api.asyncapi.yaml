@@ -1,0 +1,47 @@
+asyncapi: 3.0.0
+info:
+  title: Tracking API
+  version: 1.8.2
+  description: Queues each scan a carrier reports through POST /carrier-events, for the event worker to apply.
+defaultContentType: application/json
+
+servers:
+  production:
+    host: tracking-rabbitmq.tracking:5672
+    protocol: amqp
+    description: The tracking release's RabbitMQ.
+
+channels:
+  carrierScans:
+    address: carrier.scans
+    description: One message per scan, in the order the carrier sent them.
+    messages:
+      CarrierScan:
+        $ref: '#/components/messages/CarrierScan'
+
+operations:
+  queueCarrierScan:
+    action: send
+    channel:
+      $ref: '#/channels/carrierScans'
+    summary: Queue a scan once its signature checks.
+
+components:
+  messages:
+    CarrierScan:
+      name: CarrierScan
+      title: Carrier scan
+      payload:
+        type: object
+        required: [parcelCode, carrier, kind, happenedAt]
+        properties:
+          parcelCode:
+            type: string
+          carrier:
+            type: string
+          kind:
+            type: string
+            enum: [collected, in_transit, out_for_delivery, delivered, failed_attempt]
+          happenedAt:
+            type: string
+            format: date-time

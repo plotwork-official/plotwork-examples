@@ -1,0 +1,170 @@
+{
+ "version": "38.0.1",
+ "artifacts": {
+  "LabelStorage.assets": {
+   "type": "cdk:asset-manifest",
+   "properties": {
+    "file": "LabelStorage.assets.json",
+    "requiresBootstrapStackVersion": 6,
+    "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+   }
+  },
+  "LabelStorage": {
+   "type": "aws:cloudformation:stack",
+   "environment": "aws://unknown-account/eu-west-1",
+   "properties": {
+    "templateFile": "LabelStorage.template.json",
+    "terminationProtection": false,
+    "validateOnSynth": false,
+    "tags": {
+     "application": "parcelpoint",
+     "environment": "prod",
+     "managed_by": "cdk"
+    }
+   },
+   "dependencies": [
+    "LabelStorage.assets"
+   ],
+   "metadata": {
+    "/LabelStorage/Labels/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "LabelsBucket4F1A9C27"
+     }
+    ],
+    "/LabelStorage/CDKMetadata/Default": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+     }
+    ]
+   },
+   "displayName": "LabelStorage"
+  },
+  "LabelPrinting.assets": {
+   "type": "cdk:asset-manifest",
+   "properties": {
+    "file": "LabelPrinting.assets.json",
+    "requiresBootstrapStackVersion": 6,
+    "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+   }
+  },
+  "LabelPrinting": {
+   "type": "aws:cloudformation:stack",
+   "environment": "aws://unknown-account/eu-west-1",
+   "properties": {
+    "templateFile": "LabelPrinting.template.json",
+    "terminationProtection": false,
+    "validateOnSynth": false,
+    "tags": {
+     "application": "parcelpoint",
+     "environment": "prod",
+     "managed_by": "cdk"
+    }
+   },
+   "dependencies": [
+    "LabelStorage",
+    "LabelPrinting.assets"
+   ],
+   "metadata": {
+    "/LabelPrinting/Printing/RequestsDeadLetters/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "RequestsDeadLetters3B7E0A14"
+     }
+    ],
+    "/LabelPrinting/Printing/Requests/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "RequestsA6D02F8B"
+     }
+    ],
+    "/LabelPrinting/Printing/Jobs/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "Jobs9E4C1B70"
+     }
+    ],
+    "/LabelPrinting/Printing/Renderer/ServiceRole/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "RendererServiceRole1C7A5E33"
+     }
+    ],
+    "/LabelPrinting/Printing/Renderer/ServiceRole/DefaultPolicy/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "RendererServiceRoleDefaultPolicy8B3F6D29"
+     }
+    ],
+    "/LabelPrinting/Printing/Renderer/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "Renderer5D8E2A41"
+     }
+    ],
+    "/LabelPrinting/Printing/Renderer/SqsEventSource:LabelPrintingPrintingRequestsA6D02F8B/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "RendererSqsEventSourceLabelPrintingPrintingRequestsA6D02F8B7F1C3E95"
+     }
+    ],
+    "/LabelPrinting/Api/Intake/ServiceRole/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "IntakeServiceRole6E2B9D18"
+     }
+    ],
+    "/LabelPrinting/Api/Intake/ServiceRole/DefaultPolicy/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "IntakeServiceRoleDefaultPolicy0A5C7F42"
+     }
+    ],
+    "/LabelPrinting/Api/Intake/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "Intake8F3A6C15"
+     }
+    ],
+    "/LabelPrinting/Api/Intake/FunctionUrl/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "IntakeFunctionUrl3E7B1A58"
+     }
+    ],
+    "/LabelPrinting/Alerts.NestedStack/Alerts.NestedStackResource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "AlertsNestedStackAlertsNestedStackResource9D3B5E71"
+     }
+    ],
+    "/LabelPrinting/CDKMetadata/Default": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+     }
+    ],
+    "/LabelPrinting/Alerts/OnCall/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "OnCall4B8E1D53"
+     }
+    ],
+    "/LabelPrinting/Alerts/DeadLettersAlarm/Resource": [
+     {
+      "type": "aws:cdk:logicalId",
+      "data": "DeadLettersAlarm6A1D3F88"
+     }
+    ]
+   },
+   "displayName": "LabelPrinting"
+  },
+  "Tree": {
+   "type": "cdk:tree",
+   "properties": {
+    "file": "tree.json"
+   }
+  }
+ }
+}

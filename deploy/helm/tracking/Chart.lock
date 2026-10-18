@@ -1,0 +1,15 @@
+dependencies:
+- name: postgresql
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 15.5.20
+- name: rabbitmq
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 14.6.6
+- name: redis
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 19.6.4
+- name: parcelpoint-common
+  repository: file://charts/parcelpoint-common
+  version: 0.2.0
+digest: sha256:8b3e1d0c6f2a4e9b7d5c1a3f0e8b6d4c2a9f7e5b3d1c0a8e6f4b2d9c7a5e3f1b
+generated: '2026-10-02T08:41:17.552Z'

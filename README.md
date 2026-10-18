@@ -1,6 +1,6 @@
 # Plotwork examples
 
-A small, made-up company, Parcelpoint, whose diagrams are made from its own files and kept in step with them by [Plotwork](https://plotwork.dev): Terraform, Bicep, an ARM template, Pulumi, CloudFormation, an OpenAPI document, a Docker Compose file, Kubernetes manifests, a SQL schema, a GitHub Actions workflow, and a CSV. Copy what you need. The same repository is the smoke test of every Plotwork release: its workflows run the GitHub Action and the command line against it after each release.
+A small, made-up company, Parcelpoint, whose diagrams are made from its own files and kept in step with them by [Plotwork](https://plotwork.dev): Terraform, Bicep, an ARM template, Pulumi, CloudFormation, a CDK cloud assembly, an OpenAPI document, AsyncAPI documents, a Docker Compose file, Kubernetes manifests, a Helm chart, Kustomize overlays, a Backstage catalog, a Structurizr workspace, a SQL schema, GitHub Actions, GitLab CI/CD and Azure Pipelines files, and a CSV. Copy what you need. The same repository is the smoke test of every Plotwork release: its workflows run the GitHub Action and the command line against it after each release.
 
 ## TL;DR
 
@@ -24,11 +24,21 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 | `infra/bicep/`, `infra/pulumi/` | The same stack in Bicep, and as a Pulumi program and a stack export. | `docs/infra-bicep.diagram`, `docs/infra-pulumi.diagram`, `docs/infra-pulumi-state.diagram` |
 | `infra/arm/` | The label and event services as an ARM template. | `docs/infra-arm.diagram` |
 | `infra/cloudformation/` | The tracking API on AWS as a SAM template. | `docs/infra-aws.diagram` |
+| `infra/cdk/cdk.out/` | The label printing service on AWS, as `cdk synth` writes it: two stacks, constructs, and a nested stack of alerts. | `docs/infra-cdk.diagram` |
 | `compose.yaml` | The stack a developer runs. | The `services` fence of `docs/architecture.md` |
 | `k8s/*.yaml` | The same services on Kubernetes. | `docs/cluster.diagram` |
+| `deploy/helm/tracking/` | The tracking chart: its dependencies, the versions `Chart.lock` resolved, and a cache its values switch off. | `docs/helm-chart.diagram` |
+| `deploy/helm/rendered/tracking.yaml` | What `helm template` renders from that chart, framed by release and chart. | `docs/helm-release.diagram` |
+| `deploy/kustomize/webhook-sender/` | The webhook sender's base, `dev` and `prod` overlays, and a tracing component. | `docs/kustomize.diagram` |
+| `deploy/kustomize/built/webhook-sender-prod.yaml` | What `kustomize build overlays/prod` writes. | `docs/kustomize-prod.diagram` |
 | `api/openapi.json` | The tracking API. | `docs/api.diagram` (by tag) and `docs/api-access.diagram` (who may call each endpoint) |
+| `events/*.asyncapi.yaml` | The messages on RabbitMQ: the API and the worker in AsyncAPI 3, the webhook sender in AsyncAPI 2, meeting on shared channels. | `docs/events.diagram` |
+| `catalog/` | The Backstage catalog: a domain, three systems, their components, APIs, and resources, and the teams and people who own them. | `docs/catalog.diagram` (by system) and `docs/catalog-teams.diagram` (by owner) |
+| `architecture/workspace.dsl` | The C4 model in the Structurizr DSL: people, containers, components, and the systems around them. | `docs/c4-containers.diagram` |
 | `db/schema.sql` | The tracking database. | `docs/database.diagram` |
 | `.github/workflows/check.yml` | This repository's pull request check. | `docs/ci.diagram` |
+| `pipelines/gitlab/.gitlab-ci.yml` | The webhook sender's pipeline on GitLab, where its mirror runs: `needs`, `rules`, a manual deploy, and two triggers. | `docs/ci-gitlab.diagram` |
+| `pipelines/azure/azure-pipelines.yml` | The label service's pipeline on Azure Pipelines: stages, `dependsOn`, and deployment jobs to environments. | `docs/ci-azure.diagram` |
 | `data/shipments.csv` | Monthly shipments by region. | `docs/shipments.diagram` |
 | `diagrams/` | Hand-written diagrams of other kinds. | |
 

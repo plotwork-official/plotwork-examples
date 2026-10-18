@@ -1,0 +1,41 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: merchant-dashboard
+  title: Merchant dashboard
+  description: Where a merchant creates shipments and prints labels.
+  tags: [react]
+spec:
+  type: website
+  lifecycle: production
+  owner: team-integrations
+  system: merchant-integrations
+  consumesApis: [tracking-rest]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: webhook-sender
+  title: Webhook sender
+  description: Posts each parcel event to the webhooks merchants registered.
+  tags: [go, kubernetes]
+spec:
+  type: service
+  lifecycle: production
+  owner: team-integrations
+  system: merchant-integrations
+  consumesApis: [parcel-events]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: parcelpoint-node
+  title: Node SDK
+  description: The tracking API for Node, published to npm.
+  tags: [typescript, sdk]
+spec:
+  type: library
+  lifecycle: experimental
+  owner: team-integrations
+  system: merchant-integrations
+  consumesApis: [tracking-rest]

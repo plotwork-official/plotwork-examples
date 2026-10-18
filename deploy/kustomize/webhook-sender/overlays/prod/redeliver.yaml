@@ -1,0 +1,21 @@
+# Production only: every ten minutes, sends again the webhooks a merchant's server refused.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: webhook-redeliver
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: redeliver
+            image: ghcr.io/parcelpoint/webhook-sender
+            args: [redeliver, --older-than=10m]
+            envFrom:
+            - configMapRef:
+                name: webhook-config
+            - secretRef:
+                name: webhook-queue

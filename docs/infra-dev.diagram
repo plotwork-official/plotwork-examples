@@ -12,7 +12,7 @@ group azure_account "Azure subscription" type=account {
       node this_4 service "appi-parcel-dev" sub="Application Insights web" icon=azure:application-insights
     }
 
-    group compute "Compute" icon=lucide:package sub="Module modules/compute" {
+    group compute "Compute" type=resource-group icon=lucide:package sub="Module modules/compute" {
       node apps identity "id-parcel-dev-apps" sub="Managed identity" icon=azure:managed-identities
 
       group this_2 "asp-parcel-dev" type=service-plan {
@@ -43,26 +43,26 @@ group azure_account "Azure subscription" type=account {
       }
     }
 
-    group data_2 "Data" icon=lucide:package sub="Module modules/data" {
+    group data_2 "Data" type=resource-group icon=lucide:package sub="Module modules/data" {
       node labels_3 gateway "pe-parcel-dev-labels" sub="Private endpoint" icon=azure:private-endpoints
 
-      group this_group "psql-parcel-dev" icon=azure:database-for-postgresql {
+      group this_group "psql-parcel-dev" type=data-tier icon=azure:database-for-postgresql {
         node postgres_2 service "Postgres password" icon=lucide:key-round
         node this_5 database "PostgreSQL flexible server" sub="B_Standard_B1ms" icon=azure:database-for-postgresql
         node tracking database "tracking" sub="Database" icon=azure:database-for-postgresql
       }
 
-      group labels_group "stparceldevlabels" icon=azure:storage-accounts {
+      group labels_group "stparceldevlabels" type=storage-account icon=azure:storage-accounts {
         node labels storage "Storage account" sub="Standard" icon=azure:storage-accounts
         node labels_2 storage "labels" sub="Blob container" icon=azure:storage-container
       }
 
-      group this_group_2 "sb-parcel-dev" icon=azure:service-bus {
+      group this_group_2 "sb-parcel-dev" type=messaging icon=azure:service-bus {
         node this_6 queue "Service Bus namespace" sub="Standard" icon=azure:service-bus
         node carrier_events queue "carrier-events" sub="Service Bus queue" icon=azure:service-bus
       }
 
-      group this_group_3 "kv-parcel-dev" icon=azure:key-vault {
+      group this_group_3 "kv-parcel-dev" type=security icon=azure:key-vault {
         node this_7 secret "Key Vault" sub="standard" icon=azure:key-vault
         node postgres_password secret "postgres-password" sub="Secret" icon=azure:keys
       }
@@ -70,24 +70,24 @@ group azure_account "Azure subscription" type=account {
   }
 }
 
-this_4 -> this_3 : "logs"
+this_4 -> this_3 : "logs" icon=lucide:activity
 app_2 -> this_3 : "diagnostics"
 postgres -> this_network : "DNS link"
 this_5 -> data_subnet : "subnet"
 this_5 -> postgres : "DNS"
-this_5 -> postgres_2 : "password"
-labels_3 -> labels : "private link"
+this_5 -> postgres_2 : "password" icon=lucide:key-round role=identity
+labels_3 -> labels : "private link" icon=lucide:lock role=private
 labels_3 -> endpoints_subnet : "subnet"
 postgres_password -> postgres_2 : "holds"
-apps -> labels : "Storage Blob Data Contributor"
-apps -> this_6 : "Azure Service Bus Data Receiver"
-apps -> this_7 : "Key Vault Secrets User"
-this_service_plan -> app_subnet : "VNet integration (2)"
-this_service_plan -> this_4 : "telemetry (2)"
-this_service_plan -> this_5 : "data (2)"
-api -> postgres_password : "secret"
-this_service_plan -> labels : "storage (2)"
-this_service_plan -> apps : "identity (2)"
-worker -> carrier_events : "messages"
+apps -> labels : "Storage Blob Data Contributor" icon=lucide:key-round role=identity
+apps -> this_6 : "Azure Service Bus Data Receiver" icon=lucide:key-round role=identity
+apps -> this_7 : "Key Vault Secrets User" icon=lucide:key-round role=identity
+this_service_plan -> app_subnet : "VNet integration (2)" icon=lucide:lock role=private
+this_service_plan -> this_4 : "telemetry (2)" icon=lucide:activity
+this_service_plan -> this_5 : "data (2)" icon=lucide:database role=data
+api -> postgres_password : "secret" icon=lucide:key-round role=identity
+this_service_plan -> labels : "storage (2)" icon=lucide:database role=data
+this_service_plan -> apps : "identity (2)" icon=lucide:key-round role=identity
+worker -> carrier_events : "messages" icon=lucide:send role=async
 tracking -> this_5 : "part of"
 labels_2 -> labels : "part of"

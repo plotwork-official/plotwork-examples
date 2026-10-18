@@ -1,0 +1,26 @@
+# Reads parcel events from the queue and posts each to the webhooks merchants registered.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-sender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-sender
+  template:
+    metadata:
+      labels:
+        app: webhook-sender
+    spec:
+      containers:
+      - name: sender
+        image: ghcr.io/parcelpoint/webhook-sender
+        ports:
+        - name: metrics
+          containerPort: 9090
+        envFrom:
+        - configMapRef:
+            name: webhook-config
+        - secretRef:
+            name: webhook-queue

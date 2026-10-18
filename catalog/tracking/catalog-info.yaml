@@ -1,0 +1,82 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tracking-api
+  title: Tracking API
+  description: Creates shipments and answers where a parcel is.
+  annotations:
+    github.com/project-slug: parcelpoint/tracking-api
+  tags: [typescript, http]
+spec:
+  type: service
+  lifecycle: production
+  owner: team-tracking
+  system: tracking
+  providesApis: [tracking-rest]
+  consumesApis: [label-requests]
+  dependsOn: [resource:tracking-db, resource:carrier-events]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: event-worker
+  title: Carrier event worker
+  description: Reads carrier scans from the queue and moves each parcel along.
+  tags: [typescript, rabbitmq]
+spec:
+  type: service
+  lifecycle: production
+  owner: team-tracking
+  system: tracking
+  providesApis: [parcel-events]
+  dependsOn: [resource:tracking-db, resource:carrier-events]
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: tracking-rest
+  title: Tracking REST API
+  description: Shipments, parcels, and their events, as api/openapi.json describes them.
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-tracking
+  system: tracking
+  definition:
+    $text: ../../api/openapi.json
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: parcel-events
+  title: Parcel events
+  description: A message each time a parcel changes status.
+spec:
+  type: asyncapi
+  lifecycle: production
+  owner: team-tracking
+  system: tracking
+  definition:
+    $text: ../../events/event-worker.asyncapi.yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: tracking-db
+  title: Tracking database (Postgres)
+  description: Merchants, shipments, parcels, and parcel events.
+spec:
+  type: database
+  owner: team-tracking
+  system: tracking
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: carrier-events
+  title: Carrier events (RabbitMQ)
+  description: The queue carriers' scans arrive on.
+spec:
+  type: queue
+  owner: team-tracking
+  system: tracking

@@ -1,0 +1,73 @@
+asyncapi: 3.0.0
+info:
+  title: Carrier event worker
+  version: 1.8.2
+  description: Applies carriers' scans to parcels, and says each time a parcel's status changes.
+defaultContentType: application/json
+
+servers:
+  production:
+    host: tracking-rabbitmq.tracking:5672
+    protocol: amqp
+    description: The tracking release's RabbitMQ.
+
+channels:
+  carrierScans:
+    address: carrier.scans
+    messages:
+      CarrierScan:
+        $ref: '#/components/messages/CarrierScan'
+  parcelStatus:
+    address: parcel.status
+    description: The new status of a parcel, once per change.
+    messages:
+      ParcelStatusChanged:
+        $ref: '#/components/messages/ParcelStatusChanged'
+      ParcelDelivered:
+        $ref: '#/components/messages/ParcelDelivered'
+
+operations:
+  applyCarrierScan:
+    action: receive
+    channel:
+      $ref: '#/channels/carrierScans'
+    summary: Move the parcel along and record the event.
+  announceStatus:
+    action: send
+    channel:
+      $ref: '#/channels/parcelStatus'
+
+components:
+  messages:
+    CarrierScan:
+      name: CarrierScan
+      title: Carrier scan
+      payload:
+        type: object
+        properties:
+          parcelCode:
+            type: string
+          kind:
+            type: string
+    ParcelStatusChanged:
+      name: ParcelStatusChanged
+      title: Parcel status changed
+      payload:
+        $ref: '#/components/schemas/ParcelStatus'
+    ParcelDelivered:
+      name: ParcelDelivered
+      title: Parcel delivered
+      payload:
+        $ref: '#/components/schemas/ParcelStatus'
+  schemas:
+    ParcelStatus:
+      type: object
+      required: [parcelCode, status, at]
+      properties:
+        parcelCode:
+          type: string
+        status:
+          type: string
+        at:
+          type: string
+          format: date-time

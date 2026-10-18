@@ -1,0 +1,84 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: label-intake
+  title: Label intake
+  description: Takes a label request and queues it.
+  tags: [typescript, lambda]
+spec:
+  type: service
+  lifecycle: production
+  owner: team-labels
+  system: labels
+  providesApis: [label-requests]
+  dependsOn: [resource:label-requests-queue, resource:label-jobs]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: label-renderer
+  title: Label renderer
+  description: Draws each carrier's label as a PDF and keeps it.
+  tags: [typescript, lambda]
+spec:
+  type: service
+  lifecycle: production
+  owner: team-labels
+  system: labels
+  dependsOn: [resource:label-requests-queue, resource:label-jobs, resource:label-store]
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: label-requests
+  title: Label requests
+  description: POST a parcel, get its label's address back.
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-labels
+  system: labels
+  definition: |
+    openapi: 3.0.3
+    info:
+      title: Label requests
+      version: 1.0.0
+    paths:
+      /labels:
+        post:
+          responses:
+            '202':
+              description: The label is queued.
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: label-requests-queue
+  title: Label requests (Amazon SQS)
+  description: parcel-prod-label-requests, with a dead-letter queue.
+spec:
+  type: queue
+  owner: team-labels
+  system: labels
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: label-jobs
+  title: Label jobs (DynamoDB)
+  description: One row per label, until it expires.
+spec:
+  type: database
+  owner: team-labels
+  system: labels
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: label-store
+  title: Label PDFs (Amazon S3)
+  description: parcel-prod-labels, kept for a year.
+spec:
+  type: s3-bucket
+  owner: team-labels
+  system: labels

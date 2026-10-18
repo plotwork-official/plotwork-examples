@@ -42,12 +42,12 @@ api -> db_1
 api -> queue
 worker -> db_1
 worker -> queue
-db_1 -> tracking_data_volume : "mounts"
+db_1 -> tracking_data_volume : "mounts" icon=lucide:hard-drive role=data
 ```
 
 </details>
 
-<!-- diagram:start id="parcelpoint-services-on-a-laptop" hash="244f03ac715b" -->
+<!-- diagram:start id="parcelpoint-services-on-a-laptop" hash="f805f6b9eb8d" -->
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/parcelpoint-services-on-a-laptop.dark.svg">
   <img alt="Parcelpoint services on a laptop: 6 nodes, 6 connections. The 5 services of a Docker Compose file in 2 networks, with 1 named volume. Each arrow points from a service to one it depends on." src="assets/diagrams/parcelpoint-services-on-a-laptop.svg">
@@ -74,7 +74,7 @@ db_1 -> tracking_data_volume : "mounts"
 - api to queue
 - worker to db
 - worker to queue
-- db to tracking-data: mounts
+- db to tracking-data (stored data line): mounts
 
 </details>
 <!-- diagram:end -->

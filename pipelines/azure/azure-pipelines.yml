@@ -1,0 +1,94 @@
+# The label service's pipeline on Azure Pipelines: build and test once, then deploy the CDK app to staging, and to
+# production after the smoke test and an approval on the environment.
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-24.04
+
+variables:
+  nodeVersion: '22.x'
+
+stages:
+  - stage: Build
+    displayName: Build and test
+    jobs:
+      - job: Test
+        displayName: Unit tests
+        strategy:
+          matrix:
+            node20:
+              nodeVersion: '20.x'
+            node22:
+              nodeVersion: '22.x'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+          - script: npm ci
+          - script: npm test
+
+      - job: Synth
+        displayName: Synthesize the cloud assembly
+        dependsOn: Test
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+          - script: npm ci
+          - script: npx cdk synth --output cdk.out
+          - publish: cdk.out
+            artifact: cloud-assembly
+
+      - job: Audit
+        displayName: Licence and vulnerability audit
+        condition: eq(variables['Build.Reason'], 'Schedule')
+        steps:
+          - script: npm audit --audit-level=high
+
+  - stage: Staging
+    displayName: Deploy to staging
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployStaging
+        displayName: cdk deploy
+        environment: labels-staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: cloud-assembly
+                - script: npx cdk deploy --app $(Pipeline.Workspace)/cloud-assembly --all --require-approval never
+
+      - job: Smoke
+        displayName: Print a test label
+        dependsOn: DeployStaging
+        steps:
+          - script: ./scripts/print-test-label.sh staging
+
+  - stage: Production
+    displayName: Deploy to production
+    dependsOn: Staging
+    jobs:
+      - deployment: DeployProduction
+        displayName: cdk deploy
+        environment:
+          name: labels-production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: cloud-assembly
+                - script: npx cdk deploy --app $(Pipeline.Workspace)/cloud-assembly --all --require-approval never
+            on:
+              failure:
+                steps:
+                  - script: ./scripts/page-on-call.sh "Label service production deploy failed"

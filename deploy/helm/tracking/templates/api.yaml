@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "parcelpoint.fullname" . }}-api
+  labels:
+    {{- include "parcelpoint.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "parcelpoint.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "parcelpoint.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ include "parcelpoint.fullname" . }}-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "parcelpoint.fullname" . }}-api
+  labels:
+    {{- include "parcelpoint.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "parcelpoint.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  ports:
+    - port: 80
+      targetPort: 8080

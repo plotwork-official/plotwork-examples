@@ -1,0 +1,100 @@
+# The webhook sender's pipeline on GitLab, where its mirror runs: test and build on every push, deploy to staging from
+# main, and to production by hand. The Helm chart's own pipeline is a child pipeline.
+stages:
+  - test
+  - build
+  - deploy
+
+default:
+  image: golang:1.23
+  interruptible: true
+
+variables:
+  IMAGE: registry.gitlab.com/parcelpoint/webhook-sender
+
+.go-cache:
+  cache:
+    key: go-mod
+    paths: [.go/pkg/mod]
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+
+.deploy:
+  stage: deploy
+  image: alpine/k8s:1.31.1
+  script:
+    - kustomize build deploy/overlays/$OVERLAY | kubectl apply -f -
+  resource_group: $CI_ENVIRONMENT_NAME
+
+lint:
+  stage: test
+  extends: .go-cache
+  image: golangci/golangci-lint:v1.61
+  script:
+    - golangci-lint run ./...
+  needs: []
+
+unit:
+  stage: test
+  extends: .go-cache
+  script:
+    - go test -race ./...
+  needs: []
+  parallel:
+    matrix:
+      - GO_VERSION: ['1.22', '1.23']
+
+contract:
+  stage: test
+  extends: .go-cache
+  script:
+    - go test -tags contract ./contract/...
+  needs: [unit]
+  allow_failure: true
+
+docker-image:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  script:
+    - docker build -t $IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $IMAGE:$CI_COMMIT_SHORT_SHA
+  needs: [lint, unit]
+
+chart:
+  stage: build
+  trigger:
+    include: chart/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes: [chart/**/*]
+
+staging:
+  extends: .deploy
+  variables:
+    OVERLAY: dev
+  environment:
+    name: staging
+    url: https://webhooks.staging.parcelpoint.example
+  needs: [docker-image]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+production:
+  extends: .deploy
+  variables:
+    OVERLAY: prod
+  environment:
+    name: production
+    url: https://webhooks.parcelpoint.example
+  needs: [staging]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+docs:
+  stage: deploy
+  trigger:
+    project: parcelpoint/developer-docs
+    branch: main
+  needs: [production]

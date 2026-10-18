@@ -7,12 +7,12 @@ group azure_account "Azure subscription" type=account {
 
   group resource_group "Resource group" type=resource-group {
 
-    group storage_account_group "stparcelprodlabels" icon=azure:storage-accounts {
+    group storage_account_group "stparcelprodlabels" type=storage-account icon=azure:storage-accounts {
       node storage_account storage "Storage account" icon=azure:storage-accounts
       node labels storage "labels" sub="Blob container" icon=azure:storage-container
     }
 
-    group namespace_group "sb-parcel-prod" icon=azure:service-bus {
+    group namespace_group "sb-parcel-prod" type=messaging icon=azure:service-bus {
       node namespace queue "Service Bus namespace" sub="Standard" icon=azure:service-bus
       node carrier_events queue "carrier-events" sub="Service Bus queue" icon=azure:service-bus
     }

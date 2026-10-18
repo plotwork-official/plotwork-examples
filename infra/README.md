@@ -1,6 +1,6 @@
 # Parcelpoint infrastructure
 
-Parcelpoint's tracking platform on Azure, written three ways: Terraform, Bicep, and Pulumi. Beside them, its label and event services as an ARM template, and its tracking API on AWS as a CloudFormation (SAM) template. Each describes the same network, data services, and apps, with the same names, so the diagrams [Plotwork](https://plotwork.dev) makes from them are the same picture. Pick the folder of the tool you use and copy what you need.
+Parcelpoint's tracking platform on Azure, written three ways: Terraform, Bicep, and Pulumi. Beside them, its label and event services as an ARM template, its tracking API on AWS as a CloudFormation (SAM) template, and its label printing service on AWS as a CDK cloud assembly. Each describes the same network, data services, and apps, with the same names, so the diagrams [Plotwork](https://plotwork.dev) makes from them are the same picture. Pick the folder of the tool you use and copy what you need.
 
 ## TL;DR
 
@@ -28,6 +28,7 @@ Parcelpoint's tracking platform on Azure, written three ways: Terraform, Bicep, 
 | `pulumi/Pulumi.dev.yaml`, `pulumi/Pulumi.prod.yaml` | Each stack's configuration. |
 | `arm/azuredeploy.json`, `arm/azuredeploy.parameters.json` | The label storage, the carrier events queue, and the worker that reads them, with its role assignments, as `az bicep build` writes a template. |
 | `cloudformation/template.yaml` | The tracking API on AWS: an API Gateway route to a Lambda, parcels in DynamoDB, labels in S3, and carrier events on SQS with a dead-letter queue. |
+| `cdk/cdk.out/` | The label printing service on AWS as `cdk synth` writes it: the `LabelStorage` stack exports the label bucket, and the `LabelPrinting` stack holds the intake function and its URL, the request queue with its dead-letter queue, the jobs table, the renderer, and the `Alerts` nested stack with an alarm on the dead letters. |
 | `pulumi/stack-export.json` | What `pulumi stack export` writes for the production stack of a program that groups the resources in four components, `Monitoring`, `Network`, `Data`, and `Compute`, as a TypeScript program would. |
 
 ## Drawing one
@@ -40,6 +41,7 @@ Parcelpoint's tracking platform on Azure, written three ways: Terraform, Bicep, 
 | Pulumi, from its state | `npx @buun_group/plotwork import-source pulumi infra/pulumi/stack-export.json` |
 | ARM | `npx @buun_group/plotwork import-source arm infra/arm` |
 | CloudFormation | `npx @buun_group/plotwork import-source cloudformation infra/cloudformation/template.yaml` |
+| CDK | `npx @buun_group/plotwork import-source cdk infra/cdk/cdk.out` |
 
 ## See also
 
