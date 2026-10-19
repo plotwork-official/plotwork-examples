@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: plotwork-official/plotwork-action@1e344e44f5088dcdf90956fd12274e8712023625 # v1.0.0-beta.11
+      - uses: plotwork-official/plotwork-action@53d6170aee30dc3d9728de11524a68f6bc490596 # v1.0.0-beta.12
         with:
           command: check
           paths: |
