@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: plotwork-official/plotwork-action@dcec4036897b73bd3ea724b3991f4fd0ac880757 # v1.0.0-beta.14
+      - uses: plotwork-official/plotwork-action@78d7acaf4b673e10187eb9174a60a3da6949ee8a # v1.0.0
         with:
           command: generate
           mode: write
