@@ -10,12 +10,16 @@
 #   a     a clean tree (first brought to the version under test): generate in check mode passes, and the command line
 #         finds no change in meaning
 #   b     a Terraform resource added in the job: check mode fails, names the new node, and the command line agrees
-#   c     write mode with on-drift pr on a branch of this run opens a pull request holding the new diagram and the resource,
-#         whose check run passes (skipped with a notice when the token that opened it starts no workflow)
+#   c     write mode with on-drift pr on a branch of this run, with a token of the App in SMOKE_APP_ID, opens a pull request
+#         holding the new diagram and the resource, whose check run passes; without the App's secrets, write mode with
+#         on-drift fail writes the new diagram and opens no pull request, with a notice
 #   d     a rerun with no drift changes nothing, and closes that pull request and deletes its branch
 #   e     the overrides: a label survives regeneration, and a stale override warns without failing
 #   g     publishing, only when the secret PLOTWORK_API_KEY is set, to the API of the variable PLOTWORK_API_URL: a personal
 #         key's stable link serves an SVG to anyone; an organisation key's library picture serves an SVG to the key
+#   h     with no key, the Action signs in as a trusted publisher of the organisation on the API of PLOTWORK_API_URL (an entry
+#         for this repository and smoke.yml, allowed to report drift) and sends the run to its drift dashboard; skipped with a
+#         notice for a release before 1.2.0-beta.2, which has no signed-in-as or drift-url output to assert on
 #
 # Each scenario runs with continue-on-error and is then asserted on its outcome and outputs, so one failure still lets
 # the others run and report; the job fails if any assertion did. The pull request and its branch are removed at the
@@ -54,9 +58,13 @@ jobs:
       actions: write # wait for, or cancel, the runs of the smoke pull request
       contents: write # push the smoke pull request branch
       pull-requests: write # open and close the smoke pull request
+      # (h) asks GitHub for an OIDC ID token to sign in as a trusted publisher. Every trigger of this workflow is a dispatch or
+      # the schedule, never a pull request, so no run is from a fork, which GitHub would give no ID token.
+      id-token: write
     env:
       SMOKE_BRANCH: plotwork/smoke-${{ github.run_id }}-${{ github.run_attempt }}
       HAS_KEY: ${{ secrets.PLOTWORK_API_KEY != '' }}
+      HAS_APP: ${{ secrets.SMOKE_APP_ID != '' && secrets.SMOKE_APP_PRIVATE_KEY != '' }}
       # The API the key belongs to: the repository variable, such as https://api-preview.plotwork.dev, or the hosted one.
       PLOTWORK_API_URL: ${{ vars.PLOTWORK_API_URL }}
       GH_TOKEN: ${{ github.token }}
@@ -198,8 +206,23 @@ jobs:
           git add --update
           git -c user.name=plotwork-smoke -c user.email=smoke@plotwork.dev commit --quiet --no-verify -m 'smoke: add a Terraform resource'
 
+      # A pull request opened with the workflow's own token is by github-actions[bot], which this public repository treats as a
+      # first-time contributor: its check run waits for approval and never starts. So the pull request is opened with a token
+      # of a GitHub App installed on this repository, whose bot's runs start like anyone's.
+      - name: Mint a token of the smoke App for this repository
+        id: app
+        if: ${{ !cancelled() && env.HAS_APP == 'true' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.SMOKE_APP_ID }}
+          private-key: ${{ secrets.SMOKE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - id: write
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && env.HAS_APP == 'true' }}
         uses: ./.smoke/action
         continue-on-error: true
         with:
@@ -208,10 +231,37 @@ jobs:
           on-drift: pr
           pr-branch: ${{ env.SMOKE_BRANCH }}
           pr-title: 'smoke: regenerate diagrams (run ${{ github.run_id }})'
+          github-token: ${{ steps.app.outputs.token }}
+
+      # Without the App, a pull request opened with the workflow's token would leave a check run waiting for approval on every
+      # smoke branch, and cancelling it leaves a cancelled run. So none is opened: write mode with on-drift fail writes the new
+      # diagram and fails on the drift, which pushes nothing, and (d) then finds nothing to close.
+      - id: write-local
+        if: ${{ !cancelled() && env.HAS_APP != 'true' }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: write
+          on-drift: fail
+
+      - name: (c) Without the App, write mode writes the new diagram and opens no pull request
+        if: ${{ !cancelled() && env.HAS_APP != 'true' }}
+        env:
+          OUTCOME: ${{ steps.write-local.outcome }}
+          FILES: ${{ steps.write-local.outputs.files }}
+          PULL_REQUEST: ${{ steps.write-local.outputs.pull-request }}
+        run: |
+          set -euo pipefail
+          test "$OUTCOME" = failure || { echo "::error::(c) write mode with on-drift fail passed with a resource added."; exit 1; }
+          echo "$FILES" | grep -F '"docs/infra.diagram"' || { echo "::error::(c) docs/infra.diagram is not in the files output: $FILES"; exit 1; }
+          test -z "$PULL_REQUEST" || { echo "::error::(c) on-drift fail opened $PULL_REQUEST."; exit 1; }
+          grep -F 'smoke_dead_letters' docs/infra.diagram > /dev/null || { echo "::error::(c) the written docs/infra.diagram does not hold smoke_dead_letters."; exit 1; }
+          echo "::notice::The secrets SMOKE_APP_ID and SMOKE_APP_PRIVATE_KEY are not set, so no pull request was opened and its check run was not tested."
 
       - name: (c) A pull request holds the new diagram
         id: opened
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && env.HAS_APP == 'true' }}
         env:
           OUTCOME: ${{ steps.write.outcome }}
           PULL_REQUEST: ${{ steps.write.outputs.pull-request }}
@@ -226,7 +276,8 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/pulls/$number/files" --jq '.[].filename' | grep -x 'docs/infra.diagram' || { echo "::error::(c) the pull request does not change docs/infra.diagram."; exit 1; }
 
       # The pull request's check run must pass before (d) closes it and deletes its branch: a run whose branch is gone before
-      # it starts fails as a workflow file issue. A pull request opened with a token that starts no workflow has no run.
+      # it starts fails as a workflow file issue. The App's pull request starts its run like anyone's, so a run that does not
+      # start, waits for approval, or ends other than success is a failure.
       - name: (c) The pull request's check run passes
         if: ${{ !cancelled() && steps.opened.outcome == 'success' }}
         timeout-minutes: 15
@@ -241,25 +292,19 @@ jobs:
             test -n "$run" && break
             sleep 10
           done
-          if [ -z "$run" ]; then echo "::notice::(c) pull request $NUMBER started no check run in two minutes, as one opened with a token that starts no workflow does, so its check was not asserted."; exit 0; fi
-          # A pull request opened with the workflow's own token is by github-actions[bot], which GitHub treats as a first-time
-          # contributor: its run waits for a maintainer's approval (action_required) and never starts on its own. That is
-          # GitHub's rule, not a failure of the Action; pass an App or personal token in github-token to have checks run.
+          test -n "$run" || { echo "::error::(c) pull request $NUMBER started no check run in two minutes."; exit 1; }
+          status=''
           conclusion=''
           for _ in $(seq 1 60); do
             read -r status conclusion < <(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" --jq '"\(.status) \(.conclusion // "")"')
             if [ "$status" = completed ] || [ "$status" = action_required ] || [ "$conclusion" = action_required ]; then break; fi
             sleep 15
           done
-          if [ "$status" = action_required ] || [ "$conclusion" = action_required ]; then
-            gh run cancel "$run" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || true
-            echo "::notice::(c) the check run of pull request $NUMBER waits for approval, as GitHub holds every run of a pull request opened with the workflow's own token, so its check was not asserted: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"
-            exit 0
-          fi
+          test "$status" = completed || { echo "::error::(c) the check run of pull request $NUMBER is $status after fifteen minutes: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"; exit 1; }
           test "$conclusion" = success || { echo "::error::(c) the check run of pull request $NUMBER ended $conclusion: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run"; exit 1; }
           echo "The check run of pull request $NUMBER passed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" >> "$GITHUB_STEP_SUMMARY"
 
-      # (d) The same run again finds nothing to do, and closes the pull request it opened.
+      # (d) The same run again finds nothing to do, and closes the pull request it opened, with the token that opened it.
       - id: again
         if: ${{ !cancelled() }}
         uses: ./.smoke/action
@@ -269,6 +314,7 @@ jobs:
           mode: write
           on-drift: pr
           pr-branch: ${{ env.SMOKE_BRANCH }}
+          github-token: ${{ steps.app.outputs.token || github.token }}
 
       - name: (d) A rerun with no drift is a no-op and closes the pull request
         if: ${{ !cancelled() }}
@@ -282,6 +328,11 @@ jobs:
           test "$OUTCOME" = success || { echo "::error::(d) the rerun failed."; exit 1; }
           test "$STALE" = 0 || { echo "::error::(d) the rerun found $STALE drifted diagrams."; exit 1; }
           test -z "$PULL_REQUEST" || { echo "::error::(d) the rerun opened or edited $PULL_REQUEST."; exit 1; }
+          # Without the App, (c) opened no pull request and pushed nothing, so there is nothing to have closed.
+          if [ "$HAS_APP" != true ]; then
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SMOKE_BRANCH" >/dev/null 2>&1; then echo "::error::(d) $SMOKE_BRANCH exists, though no pull request was opened."; exit 1; fi
+            exit 0
+          fi
           test -n "$NUMBER" || { echo "::error::(d) there is no pull request from (c) to check."; exit 1; }
           state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER" --jq .state)
           test "$state" = closed || { echo "::error::(d) pull request $NUMBER is $state, not closed."; exit 1; }
@@ -356,6 +407,62 @@ jobs:
       - name: (g) Publishing is skipped without the key
         if: ${{ !cancelled() && env.HAS_KEY != 'true' }}
         run: echo "::notice::The secret PLOTWORK_API_KEY is not set, so publishing was not tested."
+
+      # (h) Signing in with no key. A release before 1.2.0-beta.1 cannot sign in by itself, and 1.2.0-beta.1 signs in but has
+      # no output that says so, so both are skipped. Versions are compared as semver, where a beta comes before its release.
+      - name: (h) Whether this release can show a keyless sign-in
+        id: keyless
+        if: ${{ !cancelled() }}
+        env:
+          VERSION: ${{ steps.versions.outputs.action }}
+          SINCE: 1.2.0-beta.2
+        run: |
+          set -euo pipefail
+          older=$(node -e '
+            const parse = (v) => { const [core, pre] = v.split("-"); return { core: core.split(".").map(Number), pre: pre === undefined ? [] : pre.split(".") } }
+            const a = parse(process.env.VERSION), b = parse(process.env.SINCE)
+            const part = (p, q) => (/^\d+$/.test(p) && /^\d+$/.test(q) ? Number(p) - Number(q) : p < q ? -1 : p > q ? 1 : 0)
+            const cmp = () => {
+              for (let i = 0; i < 3; i += 1) if (a.core[i] !== b.core[i]) return a.core[i] - b.core[i]
+              if (a.pre.length === 0 || b.pre.length === 0) return b.pre.length - a.pre.length
+              for (let i = 0; i < Math.min(a.pre.length, b.pre.length); i += 1) if (part(a.pre[i], b.pre[i]) !== 0) return part(a.pre[i], b.pre[i])
+              return a.pre.length - b.pre.length
+            }
+            console.log(cmp() < 0)')
+          if [ "$older" = true ]; then
+            echo "::notice::(h) plotwork-action $VERSION is older than $SINCE, which has the signed-in-as and drift-url outputs, so the keyless sign-in was not tested."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: trusted
+        if: ${{ !cancelled() && steps.keyless.outputs.run == 'true' }}
+        uses: ./.smoke/action
+        continue-on-error: true
+        with:
+          command: generate
+          mode: check
+          report-drift: true
+        env:
+          # Empty on purpose: with no key the Action signs in with the job's ID token. PLOTWORK_API_URL comes from the job.
+          PLOTWORK_API_KEY: ''
+
+      # The step's own outputs prove it: signed-in-as is set only by a sign-in with no key, and drift-url only when the API took
+      # the run. Its outcome is not asserted, since the stale override of (e) is still in the tree and (e) covers that.
+      - name: (h) signs in with no key, as a trusted publisher
+        if: ${{ !cancelled() && steps.keyless.outputs.run == 'true' }}
+        env:
+          SIGNED_IN_AS: ${{ steps.trusted.outputs.signed-in-as }}
+          DRIFT_URL: ${{ steps.trusted.outputs.drift-url }}
+        run: |
+          set -euo pipefail
+          test -n "$SIGNED_IN_AS" || { echo "::error::(h) the Action did not sign in as a trusted publisher; its log says why."; exit 1; }
+          organization=$(echo "$SIGNED_IN_AS" | jq -r '.organization // empty')
+          publisher=$(echo "$SIGNED_IN_AS" | jq -r '.publisher // empty')
+          test -n "$organization" || { echo "::error::(h) signed-in-as names no organisation: $SIGNED_IN_AS"; exit 1; }
+          test -n "$DRIFT_URL" || { echo "::error::(h) the Action signed in as $publisher of $organization, but the run was not sent to the drift dashboard."; exit 1; }
+          echo "Signed in with no key as the trusted publisher $publisher of $organization, and sent the run to $DRIFT_URL" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close the smoke pull request and delete its branch
         if: always()
