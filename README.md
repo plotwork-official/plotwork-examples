@@ -1,3 +1,12 @@
+<p align="center">
+  <a href="https://plotwork.dev">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://plotwork.dev/brand/logo/plotwork-lockup-on-dark.svg">
+      <img alt="Plotwork" src="https://plotwork.dev/brand/logo/plotwork-lockup-on-light.svg" width="260">
+    </picture>
+  </a>
+</p>
+
 # Plotwork examples
 
 A small, made-up company, Parcelpoint, whose diagrams are made from its own files and kept in step with them by [Plotwork](https://plotwork.dev): Terraform, Bicep, an ARM template, Pulumi, CloudFormation, a CDK cloud assembly, an OpenAPI document, AsyncAPI documents, a Docker Compose file, Kubernetes manifests, a Helm chart, Kustomize overlays, a Backstage catalog, a Structurizr workspace, a SQL schema, GitHub Actions, GitLab CI/CD and Azure Pipelines files, and a CSV. Copy what you need. The same repository is the smoke test of every Plotwork release: its workflows run the GitHub Action and the command line against it after each release.
