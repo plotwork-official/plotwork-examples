@@ -5,12 +5,12 @@ flow "The webhook sender's overlays, bases, and components" direction=down desc=
 
 group overlays_dev "overlays/dev" type=environment icon=lucide:layers sub="Overlay" {
   node dev_kustomization service "dev" sub="namespace webhooks-dev, prefix dev-, webhook-sender:main" icon=lucide:layers
-  node webhook_config storage "webhook-config" sub="ConfigMap generator" icon=lucide:settings-2
+  node webhook_config storage "webhook-config" sub="ConfigMap generator" icon=k8s:configmap
 }
 
 group overlays_prod "overlays/prod" type=environment icon=lucide:layers sub="Overlay" {
   node prod_kustomization service "prod" sub="namespace webhooks, webhook-sender:1.3.0, webhook-sender 3 replicas" icon=lucide:layers
-  node redeliver function "webhook-redeliver" sub="CronJob, redeliver.yaml" icon=lucide:calendar-clock
+  node redeliver function "webhook-redeliver" sub="CronJob, redeliver.yaml" icon=k8s:cronjob
   node resources_patch service "resources.yaml" sub="Patch of Deployment webhook-sender" icon=lucide:file-code
 }
 
@@ -21,10 +21,10 @@ group components_tracing "components/tracing" type=resource-group icon=lucide:la
 
 group base "base" type=resource-group icon=lucide:layers sub="Base" {
   node base_kustomization service "base" sub="kustomization.yaml" icon=lucide:layers
-  node deployment service "webhook-sender" sub="Deployment, deployment.yaml"
-  node service gateway "webhook-sender" sub="Service, service.yaml" icon=lucide:network
-  node webhook_config_2 storage "webhook-config" sub="ConfigMap generator" icon=lucide:settings-2
-  node webhook_queue secret "webhook-queue" sub="Secret generator" icon=lucide:key-round
+  node deployment service "webhook-sender" sub="Deployment, deployment.yaml" icon=k8s:deployment
+  node service gateway "webhook-sender" sub="Service, service.yaml" icon=k8s:service
+  node webhook_config_2 storage "webhook-config" sub="ConfigMap generator" icon=k8s:configmap
+  node webhook_queue secret "webhook-queue" sub="Secret generator" icon=k8s:secret
 }
 
 dev_kustomization -> base_kustomization : "builds on" icon=lucide:layers

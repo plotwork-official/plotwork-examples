@@ -6,20 +6,20 @@ flow "The tracking release, from helm template" direction=down desc="4 workloads
 group tracking "tracking" type=resource-group icon=simple:helm sub="Release" tone=blue {
 
   group tracking_2 "tracking" type=resource-group icon=lucide:package sub="Chart 0.4.0" {
-    node tracking_3 gateway "tracking" sub="Ingress, api.parcelpoint.example" icon=lucide:globe
-    node tracking_api service "tracking-api" sub="Deployment, 2 replicas, port 80"
-    node tracking_worker service "tracking-worker" sub="Deployment"
-    node tracking_config storage "tracking-config" sub="ConfigMap" icon=lucide:settings-2
+    node tracking_3 gateway "tracking" sub="Ingress, api.parcelpoint.example" icon=k8s:ingress
+    node tracking_api service "tracking-api" sub="Deployment, 2 replicas, port 80" icon=k8s:deployment
+    node tracking_worker service "tracking-worker" sub="Deployment" icon=k8s:deployment
+    node tracking_config storage "tracking-config" sub="ConfigMap" icon=k8s:configmap
   }
 
   group postgresql "postgresql" type=resource-group icon=lucide:package sub="Chart 15.5.20" {
     node tracking_postgresql database "tracking-postgresql" sub="StatefulSet, port 5432" icon=simple:postgresql
-    node tracking_postgresql_2 secret "tracking-postgresql" sub="Secret" icon=lucide:key-round
+    node tracking_postgresql_2 secret "tracking-postgresql" sub="Secret" icon=k8s:secret
   }
 
   group rabbitmq "rabbitmq" type=resource-group icon=lucide:package sub="Chart 14.6.6" {
     node tracking_rabbitmq queue "tracking-rabbitmq" sub="StatefulSet, port 5672" icon=simple:rabbitmq
-    node tracking_rabbitmq_2 secret "tracking-rabbitmq" sub="Secret" icon=lucide:key-round
+    node tracking_rabbitmq_2 secret "tracking-rabbitmq" sub="Secret" icon=k8s:secret
   }
 }
 

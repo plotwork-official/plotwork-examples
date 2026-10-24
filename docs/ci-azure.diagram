@@ -6,18 +6,18 @@ flow "The label service's Azure pipeline" direction=down desc="6 jobs in 3 stage
 node pipeline terminal "Pipeline starts"
 
 group stage_build "Build and test" type=ci-cd {
-  node test step "Unit tests" sub="2 matrix runs, ubuntu-24.04, 3 steps"
-  node synth step "Synthesize the cloud assembly" sub="ubuntu-24.04, 4 steps"
-  node audit step "Licence and vulnerability audit" sub="when its condition holds, ubuntu-24.04, 1 step"
+  node test step "Unit tests" sub="2 matrix runs, ubuntu-24.04, 3 steps" icon=simple:nodedotjs
+  node synth step "Synthesize the cloud assembly" sub="ubuntu-24.04, 4 steps" icon=simple:nodedotjs
+  node audit step "Licence and vulnerability audit" sub="when its condition holds, ubuntu-24.04, 1 step" icon=simple:npm
 }
 
 group stage_staging "Deploy to staging" type=ci-cd {
-  node deploy_staging step "cdk deploy" sub="when its condition holds, deploys to labels-staging, ubuntu-24.04, 2 steps"
+  node deploy_staging step "cdk deploy" sub="when its condition holds, deploys to labels-staging, ubuntu-24.04, 2 steps" icon=aws:cloud-development-kit
   node smoke step "Print a test label" sub="when its condition holds, ubuntu-24.04, 1 step"
 }
 
 group stage_production "Deploy to production" type=ci-cd {
-  node deploy_production step "cdk deploy" sub="deploys to labels-production, ubuntu-24.04, 3 steps"
+  node deploy_production step "cdk deploy" sub="deploys to labels-production, ubuntu-24.04, 3 steps" icon=aws:cloud-development-kit
 }
 
 test -> synth

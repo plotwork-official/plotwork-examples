@@ -7,7 +7,7 @@ Every diagram `plotwork generate` makes in this repository, on one page. Each pi
 | Question | Answer |
 |---|---|
 | How many are there? | 25: 24 `.diagram` files in this folder, and one in a fence of [architecture.md](architecture.md). |
-| Why one SVG and not two? | `"schemes": "auto"` in the `defaults` of [plotwork.config.json](../plotwork.config.json). A plain `<img>` or a link to the file then shows the reader's theme; with two files only a `<picture>` element could. |
+| Why one SVG and not two? | `"scheme": "auto"` in the `defaults` of [plotwork.config.json](../plotwork.config.json). A plain `<img>` or a link to the file then shows the reader's theme; with two files only a `<picture>` element could. |
 | How do I change one? | In its overrides file, such as [infra.overrides.json](infra.overrides.json). Never in the `.diagram` file or the SVG, which the next run writes over. |
 | What is it made from? | The file under each picture, read by the importer its `format` in the settings names. |
 
@@ -191,4 +191,4 @@ The label service's Azure pipeline: stages, `dependsOn`, and deployment jobs. Ma
 |---|---|
 | [architecture.md](architecture.md) | The architecture page, with a diagram generated into a Markdown fence |
 | [diagrams/](../diagrams/README.md) | Hand-written diagrams of other kinds |
-| [Diagrams as code](https://docs.plotwork.dev/diagrams-as-code) | The guide to `sources`, overrides, `schemes`, and the workflows |
+| [Diagrams as code](https://docs.plotwork.dev/diagrams-as-code) | The guide to `sources`, overrides, `scheme`, and the workflows |

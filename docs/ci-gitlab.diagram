@@ -14,13 +14,13 @@ group stage_test "test" type=ci-cd {
 }
 
 group stage_build "build" type=ci-cd {
-  node docker_image step "docker-image" sub="docker:27"
+  node docker_image step "docker-image" sub="docker:27" icon=simple:docker
   node chart step "chart" sub="when its rules match, golang:1.23" icon=simple:go
 }
 
 group stage_deploy "deploy" type=ci-cd {
-  node staging step "staging" sub="when its rules match, deploys to staging, k8s:1.31.1"
-  node production step "production" sub="manual, deploys to production, k8s:1.31.1"
+  node staging step "staging" sub="when its rules match, deploys to staging, k8s:1.31.1" icon=simple:kubernetes
+  node production step "production" sub="manual, deploys to production, k8s:1.31.1" icon=simple:kubernetes
   node docs step "docs" sub="golang:1.23" icon=simple:go
 }
 

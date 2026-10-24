@@ -10,7 +10,7 @@ group job_generated "Generated diagrams match their files" type=ci-cd sub="Calls
 }
 
 group job_diagrams "Hand-written diagrams are valid and drawn" type=ci-cd sub="ubuntu-latest" {
-  node diagrams_1 step "Checkout" icon=lucide:git-branch
+  node diagrams_1 step "Checkout" icon=simple:github
   node diagrams_2 step "Plotwork official plotwork"
 }
 
