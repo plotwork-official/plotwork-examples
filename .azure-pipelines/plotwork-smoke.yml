@@ -1,0 +1,63 @@
+# The smoke test of the Plotwork extension for Azure Pipelines, run in the Azure DevOps organisation that tests it.
+#
+# The Publish workflow of plotwork-official/plotwork-azure-devops queues it after each release, once the organisation has the
+# new version, and then reads the run: it passes when both steps passed on the task version that release wrote. It can also be
+# run by hand from Azure DevOps.
+#
+# The Publish workflow passes cliVersion, the latest stable command line on npm, so a release of the extension is tested with
+# the command line this repository's diagrams were drawn with. Left empty, the task runs the release its cliVersion defaults to.
+#
+# It needs no Plotwork key: each step only checks this repository, as a pull request check would.
+#   drift  plotwork generate --check: every diagram made from files (plotwork.config.json) matches its files
+#   check  plotwork sync --check: every picture under a diagram fence in the Markdown is current
+
+trigger: none
+pr: none
+
+parameters:
+  - name: channel
+    displayName: The extension under test
+    type: string
+    default: preview
+    values:
+      - preview
+      - stable
+  - name: cliVersion
+    displayName: The command line release the task runs; empty runs the task's own default
+    type: string
+    default: ' '
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 1
+
+  - ${{ if eq(parameters.channel, 'preview') }}:
+      - task: PlotworkDiagramsPreview@1
+        displayName: Diagrams made from files have not drifted
+        inputs:
+          mode: drift
+          ${{ if ne(trim(parameters.cliVersion), '') }}:
+            cliVersion: ${{ trim(parameters.cliVersion) }}
+      - task: PlotworkDiagramsPreview@1
+        displayName: Pictures in the Markdown are current
+        inputs:
+          mode: check
+          ${{ if ne(trim(parameters.cliVersion), '') }}:
+            cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - ${{ if eq(parameters.channel, 'stable') }}:
+      - task: PlotworkDiagrams@1
+        displayName: Diagrams made from files have not drifted
+        inputs:
+          mode: drift
+          ${{ if ne(trim(parameters.cliVersion), '') }}:
+            cliVersion: ${{ trim(parameters.cliVersion) }}
+      - task: PlotworkDiagrams@1
+        displayName: Pictures in the Markdown are current
+        inputs:
+          mode: check
+          ${{ if ne(trim(parameters.cliVersion), '') }}:
+            cliVersion: ${{ trim(parameters.cliVersion) }}
