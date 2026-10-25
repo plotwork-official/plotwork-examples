@@ -220,6 +220,20 @@
       "format": "csv",
       "out": "docs/shipments.diagram",
       "title": "Shipments by region"
+    },
+    {
+      "name": "workflows",
+      "from": [
+        ".github/workflows/*.yml",
+        ".github/workflows/*.yaml",
+        "!.github/workflows/check.yml",
+        "!.github/workflows/plotwork-check.yml",
+        "!.github/workflows/plotwork-regenerate.yml",
+        "!.github/workflows/plotwork-scan.yml",
+        "!.github/workflows/regenerate.yml"
+      ],
+      "format": "github-actions",
+      "out": "docs/diagrams/workflows.diagram"
     }
   ]
 }
