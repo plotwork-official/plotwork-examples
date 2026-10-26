@@ -123,18 +123,28 @@ jobs:
           on-drift: fail
           summary: false
 
+      # The committed diagrams are what the Action they pin (check.yml) draws, and the monorepo mirrors new ones only after
+      # it re-pins that Action, so the run a release starts may find them a version behind. A change in meaning is then
+      # expected and is a notice; with the pinned version under test it is a finding.
       - name: Say whether the committed tree was in step with this version
         if: ${{ !cancelled() }}
         env:
           OUTCOME: ${{ steps.prepare.outcome }}
           CHANGES: ${{ steps.prepare.outputs.changes }}
+          VERSION: ${{ steps.versions.outputs.action }}
         run: |
           set -euo pipefail
           if [ "$OUTCOME" = success ]; then echo "The committed diagrams are in step with this version."; exit 0; fi
+          pinned=$(sed -n 's/.*uses: plotwork-official\/plotwork-action@[0-9a-f]\{40\} # v\(.*\)$/\1/p' .github/workflows/check.yml | head -n 1)
+          if [ -n "$pinned" ] && [ "$pinned" != "$VERSION" ]; then
+            echo "::notice::The committed diagrams are drawn by plotwork-action $pinned, the version they pin, and $VERSION draws them differently. They move when the monorepo pins $VERSION. The rest of this run tests $VERSION against what it makes now."
+            exit 0
+          fi
           node -e 'const changes = JSON.parse(process.env.CHANGES || "[]"); const meaning = changes.filter((entry) => entry.changes > 0); if (meaning.length > 0) { console.log("::error::The committed diagrams differ in meaning from what this version makes: " + meaning.map((entry) => entry.name + ": " + entry.summary).join("; ")); process.exit(1) } console.log("::notice::This version draws the committed pictures differently; the regenerate workflow updates them.")'
 
       # (a) A clean tree is in step.
       - id: clean
+        if: ${{ !cancelled() }}
         uses: ./.smoke/action
         continue-on-error: true
         with:
