@@ -47,7 +47,7 @@ db_1 -> tracking_data_volume : "mounts" icon=lucide:hard-drive role=data
 
 </details>
 
-<!-- diagram:start id="parcelpoint-services-on-a-laptop" hash="6d2492eb31c4" -->
+<!-- diagram:start id="parcelpoint-services-on-a-laptop" hash="f2d4562476d4" -->
 <img alt="Parcelpoint services on a laptop: 6 nodes, 6 connections. The 5 services of a Docker Compose file in 2 networks, with 1 named volume. Each arrow points from a service to one it depends on." src="assets/diagrams/parcelpoint-services-on-a-laptop.svg">
 
 <details>

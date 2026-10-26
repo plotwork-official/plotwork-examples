@@ -24,7 +24,7 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 | What writes them back? | [regenerate.yml](.github/workflows/regenerate.yml), nightly and on each push to `main`, opens or edits one pull request, and closes it once nothing drifts. |
 | Can my team call it from our repositories? | Three reusable workflows (`workflow_call`), one for each set of permissions: [plotwork-check.yml](.github/workflows/plotwork-check.yml) (`contents: read`), [plotwork-scan.yml](.github/workflows/plotwork-scan.yml) (adds `security-events: write` for code scanning) and [plotwork-regenerate.yml](.github/workflows/plotwork-regenerate.yml) (`contents: write`, `pull-requests: write`). This repository's `check.yml` calls the first. |
 | How fast is it on a big monorepo? | [scale.yml](.github/workflows/scale.yml) makes one in the job (24 sources by default, hundreds of resources and endpoints), and measures a write and a check on the runner. |
-| What proves a release works? | [smoke.yml](.github/workflows/smoke.yml), after each release of the Action or the command line, nightly, and by hand. For the Azure Pipelines extension, [plotwork-smoke.yml](.azure-pipelines/plotwork-smoke.yml), which the extension's release queues in Azure DevOps. |
+| What proves a release works? | [smoke.yml](.github/workflows/smoke.yml), after each release of the Action or the command line, nightly, and by hand. For the Azure Pipelines extension, [plotwork-smoke.yml](.azure-pipelines/plotwork-smoke.yml) and [plotwork-smoke-write.yml](.azure-pipelines/plotwork-smoke-write.yml), which the extension's release queues in Azure DevOps. |
 | Can I run it on my machine? | `npx @buun_group/plotwork generate --check` in a clone. Nothing leaves the machine. |
 
 ## Layout
@@ -48,7 +48,8 @@ A small, made-up company, Parcelpoint, whose diagrams are made from its own file
 | `architecture/workspace.dsl` | The C4 model in the Structurizr DSL: people, containers, components, and the systems around them. | `docs/c4-containers.diagram` |
 | `db/schema.sql` | The tracking database. | `docs/database.diagram` |
 | `.github/workflows/check.yml` | This repository's pull request check. | `docs/ci.diagram` |
-| `.azure-pipelines/plotwork-smoke.yml` | The Azure Pipelines extension's smoke test: its drift and check modes on this repository. | |
+| `.azure-pipelines/plotwork-smoke.yml` | The Azure Pipelines extension's smoke test: every mode on this repository, a page and a known-bad diagram the pipeline writes, and a step that checks the output variables. | |
+| `.azure-pipelines/plotwork-smoke-write.yml` | Its write half, run in an Azure Repos copy of this repository: `generate` opens a pull request after a made-up drift, and abandons it once nothing drifts. | |
 | `pipelines/gitlab/.gitlab-ci.yml` | The webhook sender's pipeline on GitLab, where its mirror runs: `needs`, `rules`, a manual deploy, and two triggers. | `docs/ci-gitlab.diagram` |
 | `pipelines/azure/azure-pipelines.yml` | The label service's pipeline on Azure Pipelines: stages, `dependsOn`, and deployment jobs to environments. | `docs/ci-azure.diagram` |
 | `data/shipments.csv` | Monthly shipments by region. | `docs/shipments.diagram` |

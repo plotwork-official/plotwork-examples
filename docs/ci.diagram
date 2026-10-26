@@ -3,15 +3,15 @@
 # after an edit to keep it there, then run plotwork generate.
 flow "Pull request checks" direction=down desc="2 jobs and their steps of the check workflow, started by a pull request or a push to main, in the order their needs set, imported from GitHub Actions."
 
-node on terminal "Pull request or push"
+node on terminal "Pull request or push" icon=simple:githubactions
 
 group job_generated "Generated diagrams match their files" type=ci-cd sub="Calls plotwork-check.yml" {
-  node generated step "Generated diagrams match their files" sub="Calls plotwork-check.yml"
+  node generated step "Generated diagrams match their files" sub="Calls plotwork-check.yml" icon=simple:githubactions
 }
 
 group job_diagrams "Hand-written diagrams are valid and drawn" type=ci-cd sub="ubuntu-latest" {
-  node diagrams_1 step "Checkout" icon=simple:github
-  node diagrams_2 step "Plotwork official plotwork"
+  node diagrams_1 step "Checkout" icon=lucide:git-branch
+  node diagrams_2 step "Plotwork official plotwork" icon=simple:githubactions
 }
 
 on -> generated

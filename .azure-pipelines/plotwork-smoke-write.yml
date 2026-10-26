@@ -1,0 +1,100 @@
+# The write half of the smoke test of the Plotwork extension for Azure Pipelines. It runs in an Azure Repos copy of this
+# repository (plotwork-smoke-write in the project that tests the extension), never here: the Publish workflow of
+# plotwork-official/plotwork-azure-devops pushes this repository to that copy, with a made-up change to compose.yaml when
+# expectDrift is true, queues this pipeline, and then reads the pull request it opened. A second run with expectDrift false must
+# abandon that pull request and delete its branch.
+#
+# It writes with the job's own access token, so the project's build service needs Contribute, Create branch, and Contribute to
+# pull requests on the copy. With plotworkOrg set, the step also reports drift and publishes with no key, as a trusted
+# publisher: the organisation must list this pipeline (its Azure DevOps organisation, project, and definition id) under Keys & CI,
+# Trusted publishers, Azure Pipelines.
+
+trigger: none
+pr: none
+
+parameters:
+  - name: channel
+    displayName: The extension under test
+    type: string
+    default: preview
+    values:
+      - preview
+      - stable
+  - name: cliVersion
+    displayName: The command line release the task runs; empty runs the task's own default
+    type: string
+    default: ' '
+  - name: expectDrift
+    displayName: Whether the push before this run changed a source
+    type: boolean
+    default: true
+  - name: plotworkOrg
+    displayName: The Plotwork organisation that trusts this pipeline; empty skips reporting and publishing
+    type: string
+    default: ' '
+  - name: apiUrl
+    displayName: The Plotwork API
+    type: string
+    default: https://api-preview.plotwork.dev
+
+variables:
+  ${{ if eq(parameters.channel, 'preview') }}:
+    plotworkTask: PlotworkDiagramsPreview
+  ${{ else }}:
+    plotworkTask: PlotworkDiagrams
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+    persistCredentials: false
+
+  - task: UseNode@1
+    displayName: Node 22
+    inputs:
+      version: 22.x
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: generate
+    displayName: The diagrams are written again, in a pull request
+    inputs:
+      mode: generate
+      onDrift: pr
+      comment: never
+      apiUrl: ${{ parameters.apiUrl }}
+      ${{ if ne(trim(parameters.plotworkOrg), '') }}:
+        organization: ${{ trim(parameters.plotworkOrg) }}
+        reportDrift: true
+        publish: true
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - bash: |
+      set -euo pipefail
+      fail() { echo "##vso[task.logissue type=error]$1"; exit 1; }
+      if [ "$EXPECT_DRIFT" = "True" ]; then
+        [ "$STALE" -ge 1 ] || fail "stale is $STALE, not 1 or more"
+        case "$PULL_REQUEST" in https://*/pullrequest/*) ;; *) fail "pullRequest is '$PULL_REQUEST', not a pull request" ;; esac
+        case "$CHANGES" in *services*) ;; *) fail "changes is $CHANGES, without the services source" ;; esac
+      else
+        [ "$STALE" = "0" ] || fail "stale is $STALE, not 0"
+        [ -z "$PULL_REQUEST" ] || fail "pullRequest is $PULL_REQUEST, and nothing drifted"
+      fi
+      if [ -n "$(echo "$PLOTWORK_ORG" | tr -d ' ')" ]; then
+        [ -n "$DRIFT_URL" ] || fail "driftUrl is empty: the run was not sent to the drift dashboard"
+        case "$SIGNED_IN_AS" in *"\"organization\":\"$(echo "$PLOTWORK_ORG" | tr -d ' ')\""*) ;; *) fail "signedInAs is '$SIGNED_IN_AS'" ;; esac
+        [ "$PUBLISHED" != "[]" ] || fail "published is empty"
+      fi
+      echo "Every output is as expected."
+    displayName: The outputs are as expected
+    env:
+      EXPECT_DRIFT: ${{ parameters.expectDrift }}
+      PLOTWORK_ORG: ${{ parameters.plotworkOrg }}
+      STALE: $(generate.stale)
+      PULL_REQUEST: $(generate.pullRequest)
+      CHANGES: $(generate.changes)
+      DRIFT_URL: $(generate.driftUrl)
+      SIGNED_IN_AS: $(generate.signedInAs)
+      PUBLISHED: $(generate.published)

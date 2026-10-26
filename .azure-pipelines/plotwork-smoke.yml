@@ -1,15 +1,24 @@
 # The smoke test of the Plotwork extension for Azure Pipelines, run in the Azure DevOps organisation that tests it.
 #
 # The Publish workflow of plotwork-official/plotwork-azure-devops queues it after each release, once the organisation has the
-# new version, and then reads the run: it passes when both steps passed on the task version that release wrote. It can also be
-# run by hand from Azure DevOps.
+# new version, and then reads the run's timeline: every Plotwork step passed on the task version that release wrote, the step
+# that must fail failed, the known-bad diagram's issue names its file and line, every Plotwork step attached its summary, and the
+# step that checks the outputs passed. It can also be run by hand from Azure DevOps.
 #
 # The Publish workflow passes cliVersion, the latest stable command line on npm, so a release of the extension is tested with
 # the command line this repository's diagrams were drawn with. Left empty, the task runs the release its cliVersion defaults to.
 #
-# It needs no Plotwork key: each step only checks this repository, as a pull request check would.
-#   drift  plotwork generate --check: every diagram made from files (plotwork.config.json) matches its files
-#   check  plotwork sync --check: every picture under a diagram fence in the Markdown is current
+# It needs no Plotwork key and writes nothing to the repository: each step reads this checkout, and the steps that write (sync,
+# render) write into folders made for the run.
+#   drift     plotwork generate --check: every diagram made from files matches its files
+#   check     the Markdown pictures are current and every .diagram file is valid
+#   validate  every diagram has no error
+#   render    one .diagram file drawn light and dark into smoke-out
+#   mermaid   check with convertMermaid reads a Mermaid fence that converts as stale (failOn never)
+#   sync      a page with a new fence and a Mermaid fence is drawn and converted in smoke-sync
+#   bad       a known-bad diagram is reported on its line (failOn never), and fails the next step (continueOnError)
+#   outputs   a script reads every step's output variables
+# The fixtures under smoke-sync and smoke-bad are written by the pipeline, so this repository's own checks never see them.
 
 trigger: none
 pr: none
@@ -27,6 +36,12 @@ parameters:
     type: string
     default: ' '
 
+variables:
+  ${{ if eq(parameters.channel, 'preview') }}:
+    plotworkTask: PlotworkDiagramsPreview
+  ${{ else }}:
+    plotworkTask: PlotworkDiagrams
+
 pool:
   vmImage: ubuntu-latest
 
@@ -34,30 +49,147 @@ steps:
   - checkout: self
     fetchDepth: 1
 
-  - ${{ if eq(parameters.channel, 'preview') }}:
-      - task: PlotworkDiagramsPreview@1
-        displayName: Diagrams made from files have not drifted
-        inputs:
-          mode: drift
-          ${{ if ne(trim(parameters.cliVersion), '') }}:
-            cliVersion: ${{ trim(parameters.cliVersion) }}
-      - task: PlotworkDiagramsPreview@1
-        displayName: Pictures in the Markdown are current
-        inputs:
-          mode: check
-          ${{ if ne(trim(parameters.cliVersion), '') }}:
-            cliVersion: ${{ trim(parameters.cliVersion) }}
+  - task: UseNode@1
+    displayName: Node 22
+    inputs:
+      version: 22.x
 
-  - ${{ if eq(parameters.channel, 'stable') }}:
-      - task: PlotworkDiagrams@1
-        displayName: Diagrams made from files have not drifted
-        inputs:
-          mode: drift
-          ${{ if ne(trim(parameters.cliVersion), '') }}:
-            cliVersion: ${{ trim(parameters.cliVersion) }}
-      - task: PlotworkDiagrams@1
-        displayName: Pictures in the Markdown are current
-        inputs:
-          mode: check
-          ${{ if ne(trim(parameters.cliVersion), '') }}:
-            cliVersion: ${{ trim(parameters.cliVersion) }}
+  - bash: |
+      set -euo pipefail
+      mkdir -p smoke-sync smoke-bad
+      cat > smoke-sync/page.md <<'EOF'
+      # Smoke page
+
+      ```diagram
+      flow "Smoke"
+      node api service "API"
+      node db service "Database"
+      api -> db
+      ```
+
+      ```mermaid
+      graph TD
+        A[Start] --> B[End]
+      ```
+      EOF
+      printf 'flow "Smoke"\nnode api service "API"\napi -> missing\n' > smoke-bad/bad.diagram
+    displayName: Write the fixtures
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: drift
+    displayName: Diagrams made from files have not drifted
+    inputs:
+      mode: drift
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: check
+    displayName: Pictures in the Markdown are current
+    inputs:
+      mode: check
+      paths: |
+        **/*.md
+        !smoke-sync/**
+      diagrams: |
+        diagrams
+        docs
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: validate
+    displayName: Every diagram is valid
+    inputs:
+      mode: validate
+      paths: |
+        README.md
+        docs/*.md
+      diagrams: diagrams
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: render
+    displayName: A diagram file is drawn light and dark
+    inputs:
+      mode: render
+      diagrams: diagrams/context.diagram
+      outDir: smoke-out
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: mermaid
+    displayName: A Mermaid fence that converts is reported as stale
+    inputs:
+      mode: check
+      paths: smoke-sync/page.md
+      diagrams: ''
+      convertMermaid: true
+      failOn: never
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: sync
+    displayName: A new fence and a Mermaid fence are drawn
+    inputs:
+      mode: sync
+      paths: smoke-sync/page.md
+      convertMermaid: true
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: bad
+    displayName: A known-bad diagram is reported on its line
+    inputs:
+      mode: validate
+      paths: ''
+      diagrams: smoke-bad/bad.diagram
+      failOn: never
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - task: ${{ variables.plotworkTask }}@1
+    name: badfails
+    displayName: A known-bad diagram fails the step
+    continueOnError: true
+    inputs:
+      mode: validate
+      paths: ''
+      diagrams: smoke-bad/bad.diagram
+      summary: false
+      ${{ if ne(trim(parameters.cliVersion), '') }}:
+        cliVersion: ${{ trim(parameters.cliVersion) }}
+
+  - bash: |
+      set -euo pipefail
+      fail() { echo "##vso[task.logissue type=error]$1"; exit 1; }
+      [ "$CHECK_STALE" = "0" ] || fail "check: stale is $CHECK_STALE, not 0"
+      [ "$CHECK_ERRORS" = "0" ] || fail "check: errors is $CHECK_ERRORS, not 0"
+      [ "$VALIDATE_ERRORS" = "0" ] || fail "validate: errors is $VALIDATE_ERRORS, not 0"
+      [ "$DRIFT_STALE" = "0" ] || fail "drift: stale is $DRIFT_STALE, not 0"
+      [ "$RENDER_FILES" = '["smoke-out/diagrams/context.svg","smoke-out/diagrams/context.dark.svg"]' ] || fail "render: files is $RENDER_FILES"
+      test -s smoke-out/diagrams/context.svg || fail "render wrote no light SVG"
+      test -s smoke-out/diagrams/context.dark.svg || fail "render wrote no dark SVG"
+      [ "$MERMAID_STALE" -ge 2 ] || fail "mermaid: stale is $MERMAID_STALE, not 2 or more"
+      [ "$SYNC_STALE" -ge 1 ] || fail "sync: stale is $SYNC_STALE, not 1 or more"
+      case "$SYNC_FILES" in *smoke-sync/page.md*) ;; *) fail "sync: files is $SYNC_FILES, without smoke-sync/page.md" ;; esac
+      if grep -q '```mermaid' smoke-sync/page.md; then fail "sync left the Mermaid fence"; fi
+      [ "$BAD_ERRORS" -ge 1 ] || fail "bad: errors is $BAD_ERRORS, not 1 or more"
+      [ "$BAD_FILES" = '["smoke-bad/bad.diagram"]' ] || fail "bad: files is $BAD_FILES"
+      echo "Every output is as expected."
+    displayName: The outputs are as expected
+    env:
+      CHECK_STALE: $(check.stale)
+      CHECK_ERRORS: $(check.errors)
+      VALIDATE_ERRORS: $(validate.errors)
+      DRIFT_STALE: $(drift.stale)
+      RENDER_FILES: $(render.files)
+      MERMAID_STALE: $(mermaid.stale)
+      SYNC_STALE: $(sync.stale)
+      SYNC_FILES: $(sync.files)
+      BAD_ERRORS: $(bad.errors)
+      BAD_FILES: $(bad.files)
