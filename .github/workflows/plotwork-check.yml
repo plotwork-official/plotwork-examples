@@ -53,7 +53,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: ${{ inputs.changed-only && 0 || 1 }}
-      - uses: plotwork-official/plotwork-action@877be568308545bc11529b6b4e607374d051f4e4 # v1.3.0
+      - uses: plotwork-official/plotwork-action@1350a6ea8f7b2a18f38368b31999effc3a2ddca0 # v1.4.0
         with:
           command: generate
           working-directory: ${{ inputs.working-directory }}
