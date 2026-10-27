@@ -55,6 +55,7 @@ jobs:
           fetch-depth: ${{ inputs.changed-only && 0 || 1 }}
       - uses: plotwork-official/plotwork-action@a4df8eaf155240df63e49d360bc63e50529a3f26 # v1.5.1
         with:
+          report-drift: true
           command: generate
           working-directory: ${{ inputs.working-directory }}
           config: ${{ inputs.config }}
