@@ -26,7 +26,7 @@ jobs:
       pull-requests: write # open, edit, or close the pull request
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: plotwork-official/plotwork-action@a4df8eaf155240df63e49d360bc63e50529a3f26 # v1.5.1
+      - uses: plotwork-official/plotwork-action@6dadd275242a09f7a77bf19a7e3e0eb792c89e5b # v1.6.0
         with:
           command: generate
           mode: write
